@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SurgeWatch | Live Flood Intelligence</title>
+  <style>
+    :root {
+      --navy: #0A1026;
+      --navy-soft: #111827;
+      --yellow: #FFF600;
+      --white: #F8FAFC;
+      --muted: #A9B2C3;
+      --line: rgba(248, 250, 252, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Inter, Helvetica, Arial, sans-serif;
+      background: radial-gradient(circle at top left, #101a3a 0%, var(--navy) 45%, #050814 100%);
+      color: var(--white);
+      min-height: 100vh;
+    }
+
+    .page {
+      width: min(1120px, 92%);
+      margin: 0 auto;
+      padding: 28px 0 56px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      letter-spacing: 0.08em;
+      font-weight: 900;
+      font-size: 1.05rem;
+    }
+
+    .mark {
+      width: 38px;
+      height: 38px;
+      border: 3px solid var(--yellow);
+      border-radius: 50%;
+      position: relative;
+    }
+
+    .mark::after {
+      content: "";
+      position: absolute;
+      left: 6px;
+      right: 6px;
+      bottom: 8px;
+      height: 8px;
+      border-bottom: 3px solid var(--yellow);
+      border-radius: 50%;
+      transform: rotate(-8deg);
+    }
+
+    nav {
+      display: flex;
+      gap: 22px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .hero {
+      padding: 92px 0 76px;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 54px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      color: var(--yellow);
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      font-size: 0.82rem;
+      font-weight: 800;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      font-size: clamp(3.1rem, 8vw, 6.8rem);
+      line-height: 0.9;
+      letter-spacing: -0.08em;
+      font-weight: 950;
+      margin-bottom: 24px;
+    }
+
+    h1 span {
+      color: var(--yellow);
+    }
+
+    .subtitle {
+      font-size: clamp(1.1rem, 2vw, 1.35rem);
+      line-height: 1.65;
+      color: var(--muted);
+      max-width: 650px;
+      margin-bottom: 34px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .button {
+      border: 1px solid var(--yellow);
+      background: var(--yellow);
+      color: #050814;
+      padding: 14px 20px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-radius: 999px;
+      text-decoration: none;
+      font-size: 0.8rem;
+    }
+
+    .button.secondary {
+      background: transparent;
+      color: var(--white);
+      border-color: var(--line);
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.045);
+      border-radius: 28px;
+      padding: 24px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+    }
+
+    .score {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 22px;
+    }
+
+    .score strong {
+      font-size: 2.8rem;
+      color: var(--yellow);
+    }
+
+    .pill {
+      border: 1px solid var(--yellow);
+      color: var(--yellow);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .metrics {
+      display: grid;
+      gap: 12px;
+    }
+
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid var(--line);
+      padding-top: 13px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .metric b {
+      color: var(--white);
+    }
+
+    .section-title {
+      font-size: 0.85rem;
+      letter-spacing: 0.22em;
+      color: var(--yellow);
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-top: 16px;
+    }
+
+    .feature {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 22px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .feature h3 {
+      font-size: 1rem;
+      margin-bottom: 10px;
+    }
+
+    .feature p {
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 0.95rem;
+    }
+
+    .waitlist {
+      margin-top: 48px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      padding: 28px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 22px;
+      align-items: center;
+      background: linear-gradient(90deg, rgba(255, 246, 0, 0.1), rgba(255, 255, 255, 0.025));
+    }
+
+    .waitlist h2 {
+      font-size: 1.7rem;
+      margin-bottom: 8px;
+    }
+
+    .waitlist p {
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    footer {
+      margin-top: 54px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 800px) {
+      nav { display: none; }
+      .hero { grid-template-columns: 1fr; padding-top: 64px; }
+      .features { grid-template-columns: 1fr; }
+      .waitlist { grid-template-columns: 1fr; }
+      footer { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div class="brand">
+        <div class="mark" aria-hidden="true"></div>
+        <div>SURGE<span style="color: var(--yellow);">WATCH</span></div>
+      </div>
+      <nav>
+        <span>Live Data</span>
+        <span>Risk Engine</span>
+        <span>Alerts</span>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Live flood intelligence</div>
+        <h1>Know before<br />the water <span>rises.</span></h1>
+        <p class="subtitle">
+          SurgeWatch is an address-based flood awareness platform being built to monitor live weather, stream gauges, elevation, and flood-risk data — then turn it into simple warnings and action steps.
+        </p>
+        <div class="actions">
+          <a class="button" href="mailto:hello@surgewatch.live">Get Updates</a>
+          <a class="button secondary" href="#features">View Concept</a>
+        </div>
+      </div>
+
+      <div class="card" aria-label="SurgeWatch sample dashboard card">
+        <div class="score">
+          <div>
+            <div class="section-title" style="margin-bottom: 8px;">Sample SurgeScore</div>
+            <strong>72</strong>
+          </div>
+          <div class="pill">ELEVATED</div>
+        </div>
+        <div class="metrics">
+          <div class="metric"><span>Nearest gauge</span><b>0.8 mi</b></div>
+          <div class="metric"><span>Rainfall outlook</span><b>2.4 in</b></div>
+          <div class="metric"><span>Flood alert status</span><b>Watch</b></div>
+          <div class="metric"><span>Notification mode</span><b>On</b></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="section-title">What SurgeWatch will do</div>
+      <div class="features">
+        <div class="feature">
+          <h3>Address-Based Risk</h3>
+          <p>Enter a home address and see location-specific flood exposure based on elevation, nearby waterways, alerts, and live conditions.</p>
+        </div>
+        <div class="feature">
+          <h3>Custom SurgeScore</h3>
+          <p>A coded risk engine will combine rainfall, gauge trends, flood alerts, drainage context, and historic patterns into one simple score.</p>
+        </div>
+        <div class="feature">
+          <h3>Smart Notifications</h3>
+          <p>Users will be able to watch an address and receive alerts when local flood risk rises or dangerous conditions develop.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="waitlist">
+      <div>
+        <h2>Early prototype in development.</h2>
+        <p>SurgeWatch.live is being built as a civic engineering project focused on real-time flood awareness, public safety, and practical mitigation.</p>
+      </div>
+      <a class="button" href="mailto:hello@surgewatch.live">Contact</a>
+    </section>
+
+    <footer>
+      <span>© 2026 SurgeWatch.live</span>
+      <span>Built for flood awareness, engineering data, and early-warning notifications.</span>
+    </footer>
+  </main>
+</body>
+</html>
