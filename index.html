@@ -4,10 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SurgeWatch | Live Flood Intelligence</title>
+
   <style>
     :root {
       --navy: #0A1026;
-      --navy-soft: #111827;
+      --slate: #111827;
       --yellow: #FFF600;
       --white: #F8FAFC;
       --muted: #A9B2C3;
@@ -22,7 +23,7 @@
 
     body {
       font-family: Inter, Helvetica, Arial, sans-serif;
-      background: radial-gradient(circle at top left, #101a3a 0%, var(--navy) 45%, #050814 100%);
+      background: radial-gradient(circle at top left, #111c3d 0%, var(--navy) 45%, #050814 100%);
       color: var(--white);
       min-height: 100vh;
     }
@@ -47,7 +48,7 @@
       gap: 14px;
       letter-spacing: 0.08em;
       font-weight: 900;
-      font-size: 1.05rem;
+      font-size: 1.1rem;
     }
 
     .mark {
@@ -78,9 +79,9 @@
     }
 
     .hero {
-      padding: 92px 0 76px;
+      padding: 82px 0 70px;
       display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
+      grid-template-columns: 1.15fr 0.85fr;
       gap: 54px;
       align-items: center;
     }
@@ -107,17 +108,33 @@
     }
 
     .subtitle {
-      font-size: clamp(1.1rem, 2vw, 1.35rem);
+      font-size: clamp(1.05rem, 2vw, 1.3rem);
       line-height: 1.65;
       color: var(--muted);
-      max-width: 650px;
-      margin-bottom: 34px;
+      max-width: 680px;
+      margin-bottom: 30px;
     }
 
     .actions {
       display: flex;
       flex-wrap: wrap;
       gap: 14px;
+      align-items: center;
+    }
+
+    input {
+      padding: 14px 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      color: white;
+      min-width: 280px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    input::placeholder {
+      color: #8d96aa;
     }
 
     .button {
@@ -131,6 +148,7 @@
       border-radius: 999px;
       text-decoration: none;
       font-size: 0.8rem;
+      cursor: pointer;
     }
 
     .button.secondary {
@@ -155,7 +173,7 @@
     }
 
     .score strong {
-      font-size: 2.8rem;
+      font-size: 3rem;
       color: var(--yellow);
     }
 
@@ -177,6 +195,7 @@
     .metric {
       display: flex;
       justify-content: space-between;
+      gap: 20px;
       border-top: 1px solid var(--line);
       padding-top: 13px;
       color: var(--muted);
@@ -185,6 +204,7 @@
 
     .metric b {
       color: var(--white);
+      text-align: right;
     }
 
     .section-title {
@@ -255,13 +275,16 @@
 
     @media (max-width: 800px) {
       nav { display: none; }
-      .hero { grid-template-columns: 1fr; padding-top: 64px; }
+      .hero { grid-template-columns: 1fr; padding-top: 58px; }
       .features { grid-template-columns: 1fr; }
       .waitlist { grid-template-columns: 1fr; }
       footer { flex-direction: column; }
+      input { width: 100%; }
+      .button { width: 100%; text-align: center; }
     }
   </style>
 </head>
+
 <body>
   <main class="page">
     <header>
@@ -269,9 +292,10 @@
         <div class="mark" aria-hidden="true"></div>
         <div>SURGE<span style="color: var(--yellow);">WATCH</span></div>
       </div>
+
       <nav>
         <span>Live Data</span>
-        <span>Risk Engine</span>
+        <span>SurgeScore</span>
         <span>Alerts</span>
       </nav>
     </header>
@@ -280,43 +304,51 @@
       <div>
         <div class="eyebrow">Live flood intelligence</div>
         <h1>Know before<br />the water <span>rises.</span></h1>
+
         <p class="subtitle">
           SurgeWatch is an address-based flood awareness platform being built to monitor live weather, stream gauges, elevation, and flood-risk data, then turn it into simple warnings and action steps.
         </p>
+
         <div class="actions">
-          <a class="button" href="mailto:hello@surgewatch.live">Get Updates</a>
+          <input type="text" id="addressInput" placeholder="Enter address or ZIP code" />
+          <button class="button" onclick="runDemo()">Check Flood Risk</button>
           <a class="button secondary" href="#features">View Concept</a>
         </div>
       </div>
 
-      <div class="card" aria-label="SurgeWatch sample dashboard card">
+      <div class="card" id="resultCard" aria-label="SurgeWatch sample dashboard card">
         <div class="score">
           <div>
-            <div class="section-title" style="margin-bottom: 8px;">Sample SurgeScore</div>
-            <strong>72</strong>
+            <div class="section-title" style="margin-bottom: 8px;">Demo SurgeScore</div>
+            <strong id="scoreNumber">72</strong>
           </div>
-          <div class="pill">ELEVATED</div>
+          <div class="pill" id="riskLevel">ELEVATED</div>
         </div>
+
         <div class="metrics">
-          <div class="metric"><span>Nearest gauge</span><b>0.8 mi</b></div>
-          <div class="metric"><span>Rainfall outlook</span><b>2.4 in</b></div>
-          <div class="metric"><span>Flood alert status</span><b>Watch</b></div>
-          <div class="metric"><span>Notification mode</span><b>On</b></div>
+          <div class="metric"><span>Address monitored</span><b id="addressLabel">Southlake, TX</b></div>
+          <div class="metric"><span>Nearest gauge</span><b id="gaugeDistance">0.8 mi</b></div>
+          <div class="metric"><span>Rainfall outlook</span><b id="rainfallOutlook">2.4 in</b></div>
+          <div class="metric"><span>Flood alert status</span><b id="alertStatus">Watch</b></div>
+          <div class="metric"><span>Notification mode</span><b>Ready</b></div>
         </div>
       </div>
     </section>
 
     <section id="features">
       <div class="section-title">What SurgeWatch will do</div>
+
       <div class="features">
         <div class="feature">
           <h3>Address-Based Risk</h3>
           <p>Enter a home address and see location-specific flood exposure based on elevation, nearby waterways, alerts, and live conditions.</p>
         </div>
+
         <div class="feature">
           <h3>Custom SurgeScore</h3>
           <p>A coded risk engine will combine rainfall, gauge trends, flood alerts, drainage context, and historic patterns into one simple score.</p>
         </div>
+
         <div class="feature">
           <h3>Smart Notifications</h3>
           <p>Users will be able to watch an address and receive alerts when local flood risk rises or dangerous conditions develop.</p>
@@ -327,8 +359,11 @@
     <section class="waitlist">
       <div>
         <h2>Early prototype in development.</h2>
-        <p>SurgeWatch.live is being built as a civic engineering project focused on real-time flood awareness, public safety, and practical mitigation.</p>
+        <p>
+          SurgeWatch.live is being built as a civic engineering project focused on real-time flood awareness, public safety, infrastructure monitoring, and early-warning notifications.
+        </p>
       </div>
+
       <a class="button" href="mailto:hello@surgewatch.live">Contact</a>
     </section>
 
@@ -337,5 +372,28 @@
       <span>Built for flood awareness, engineering data, and early-warning notifications.</span>
     </footer>
   </main>
+
+  <script>
+    function runDemo() {
+      const input = document.getElementById('addressInput').value || 'Southlake, TX';
+
+      const scores = [42, 58, 72, 84];
+      const levels = ['WATCH', 'MODERATE', 'ELEVATED', 'DANGEROUS'];
+      const rain = ['1.2 in', '2.8 in', '3.4 in', '5.1 in'];
+      const gauge = ['1.4 mi', '0.9 mi', '0.6 mi', '0.3 mi'];
+      const alerts = ['Advisory', 'Flood Watch', 'Flood Warning', 'Flash Flood Warning'];
+
+      const idx = Math.floor(Math.random() * scores.length);
+
+      document.getElementById('scoreNumber').innerText = scores[idx];
+      document.getElementById('riskLevel').innerText = levels[idx];
+      document.getElementById('rainfallOutlook').innerText = rain[idx];
+      document.getElementById('gaugeDistance').innerText = gauge[idx];
+      document.getElementById('alertStatus').innerText = alerts[idx];
+      document.getElementById('addressLabel').innerText = input;
+
+      document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+    }
+  </script>
 </body>
 </html>
