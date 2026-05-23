@@ -15,11 +15,7 @@
       --line: rgba(248, 250, 252, 0.14);
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: Inter, Helvetica, Arial, sans-serif;
@@ -103,9 +99,7 @@
       margin-bottom: 24px;
     }
 
-    h1 span {
-      color: var(--yellow);
-    }
+    h1 span { color: var(--yellow); }
 
     .subtitle {
       font-size: clamp(1.05rem, 2vw, 1.3rem);
@@ -133,9 +127,7 @@
       outline: none;
     }
 
-    input::placeholder {
-      color: #8d96aa;
-    }
+    input::placeholder { color: #8d96aa; }
 
     .button {
       border: 1px solid var(--yellow);
@@ -187,10 +179,7 @@
       letter-spacing: 0.08em;
     }
 
-    .metrics {
-      display: grid;
-      gap: 12px;
-    }
+    .metrics { display: grid; gap: 12px; }
 
     .metric {
       display: flex;
@@ -316,7 +305,7 @@
         </div>
       </div>
 
-      <div class="card" id="resultCard" aria-label="SurgeWatch sample dashboard card">
+      <div class="card" id="resultCard">
         <div class="score">
           <div>
             <div class="section-title" style="margin-bottom: 8px;">Demo SurgeScore</div>
@@ -329,7 +318,7 @@
           <div class="metric"><span>Address monitored</span><b id="addressLabel">Southlake, TX</b></div>
           <div class="metric"><span>Nearest gauge</span><b id="gaugeDistance">0.8 mi</b></div>
           <div class="metric"><span>Rainfall outlook</span><b id="rainfallOutlook">2.4 in</b></div>
-          <div class="metric"><span>Flood alert status</span><b id="alertStatus">Watch</b></div>
+          <div class="metric"><span>Real NWS alert check</span><b id="realAlertStatus">Not checked</b></div>
           <div class="metric"><span>Notification mode</span><b>Ready</b></div>
         </div>
       </div>
@@ -374,14 +363,13 @@
   </main>
 
   <script>
-    function runDemo() {
+    async function runDemo() {
       const input = document.getElementById('addressInput').value || 'Southlake, TX';
 
       const scores = [42, 58, 72, 84];
       const levels = ['WATCH', 'MODERATE', 'ELEVATED', 'DANGEROUS'];
       const rain = ['1.2 in', '2.8 in', '3.4 in', '5.1 in'];
       const gauge = ['1.4 mi', '0.9 mi', '0.6 mi', '0.3 mi'];
-      const alerts = ['Advisory', 'Flood Watch', 'Flood Warning', 'Flash Flood Warning'];
 
       const idx = Math.floor(Math.random() * scores.length);
 
@@ -389,8 +377,28 @@
       document.getElementById('riskLevel').innerText = levels[idx];
       document.getElementById('rainfallOutlook').innerText = rain[idx];
       document.getElementById('gaugeDistance').innerText = gauge[idx];
-      document.getElementById('alertStatus').innerText = alerts[idx];
       document.getElementById('addressLabel').innerText = input;
+      document.getElementById('realAlertStatus').innerText = 'Checking NWS...';
+
+      try {
+        const response = await fetch('https://api.weather.gov/alerts/active?area=TX');
+        const data = await response.json();
+
+        const floodAlerts = data.features.filter(alert =>
+          alert.properties.event.toLowerCase().includes('flood')
+        );
+
+        if (floodAlerts.length > 0) {
+          document.getElementById('realAlertStatus').innerText =
+            floodAlerts[0].properties.event;
+        } else {
+          document.getElementById('realAlertStatus').innerText =
+            'No active TX flood alerts';
+        }
+      } catch (error) {
+        document.getElementById('realAlertStatus').innerText =
+          'NWS unavailable';
+      }
 
       document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
     }
