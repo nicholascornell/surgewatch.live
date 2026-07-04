@@ -511,8 +511,8 @@ const femaData = await femaResponse.json();
 
 const usgsData = await usgsResponse.json();
 console.log(usgsData);
-document.getElementById("gaugeDistance").innerText =
-  usgsData.gauge;
+document.getElementById("gaugeDistance").innerHTML =
+  `${usgsData.gauge}<br><span style="font-size:12px;color:#999">${usgsData.station}</span>`;
 
 document.getElementById("femaZone").innerText =
   femaData.zone;
