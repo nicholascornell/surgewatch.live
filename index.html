@@ -318,6 +318,9 @@
           <div class="metric"><span>Elevation</span><b id="elevationLabel">--</b></div>
           <div class="metric"><span>Real NWS alert check</span><b id="realAlertStatus">Not checked</b></div>
           <div class="metric"><span>Rainfall outlook</span><b id="rainfallOutlook">Coming soon</b></div>
+          <div class="metric"><span>High tide overlap</span><b id="tideOverlap">Coming soon</b></div>
+<div class="metric"><span>Neighborhood readiness</span><b id="readinessLabel">--</b></div>
+<div class="metric"><span>Next 12 hours</span><b id="futureTrend">--</b></div>
           <div class="metric"><span>Nearest USGS gauge</span><b id="gaugeDistance">Coming soon</b></div>
           <div class="metric"><span>Notification mode</span><b>Ready</b></div>
         </div>
@@ -450,10 +453,15 @@
         const demoRainRisk = 18;
         const demoGaugeRisk = 12;
 
-        const surgeScore = Math.min(
-          100,
-          elevationRisk + alertRisk + demoRainRisk + demoGaugeRisk
-        );
+        const demoTideRisk = 15; // later this will come from NOAA tide data
+const demoDrainageRisk = 10; // later this can use pavement/drainage data
+
+const surgeScore = Math.min(
+  100,
+  elevationRisk + alertRisk + demoRainRisk + demoGaugeRisk + demoTideRisk + demoDrainageRisk
+);
+
+const readinessScore = Math.max(0, 100 - surgeScore);
 
         document.getElementById('scoreNumber').innerText = surgeScore;
 
@@ -468,6 +476,14 @@
         }
 
         document.getElementById('riskLevel').innerText = level;
+        document.getElementById('tideOverlap').innerText =
+  'Demo: possible high tide overlap';
+
+document.getElementById('readinessLabel').innerText =
+  readinessScore + '/100';
+
+document.getElementById('futureTrend').innerText =
+  surgeScore >= 60 ? 'Risk rising' : 'Stable for now';
         document.getElementById('rainfallOutlook').innerText =
           'Demo factor active';
         document.getElementById('gaugeDistance').innerText =
