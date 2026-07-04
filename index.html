@@ -323,6 +323,21 @@
 <div class="metric"><span>Next 12 hours</span><b id="futureTrend">--</b></div>
           <div class="metric"><span>Nearest USGS gauge</span><b id="gaugeDistance">Coming soon</b></div>
           <div class="metric"><span>Notification mode</span><b>Ready</b></div>
+          <hr style="margin:22px 0;border:0;border-top:1px solid rgba(255,255,255,.12);">
+
+<h3 style="color:#FFF600;margin-bottom:12px;">
+Why this score?
+</h3>
+
+<ul id="whyList" style="
+line-height:1.8;
+padding-left:20px;
+color:#d6dce8;
+">
+
+<li>Waiting for analysis...</li>
+
+</ul>
         </div>
       </div>
     </section>
@@ -484,6 +499,25 @@ document.getElementById('readinessLabel').innerText =
 
 document.getElementById('futureTrend').innerText =
   Rain Readiness Score™ >= 60 ? 'Risk rising' : 'Stable for now';
+        const reasons = [];
+
+if (elevationRisk >= 25)
+    reasons.push("Low elevation increases flood exposure.");
+
+if (alertRisk > 0)
+    reasons.push("An official National Weather Service flood alert is active.");
+
+if (demoRainRisk > 10)
+    reasons.push("Heavy rainfall is expected.");
+
+if (demoTideRisk > 10)
+    reasons.push("High tide may reduce drainage capacity.");
+
+if (demoDrainageRisk > 5)
+    reasons.push("Urban drainage may become overwhelmed.");
+
+document.getElementById("whyList").innerHTML =
+    reasons.map(r => `<li>${r}</li>`).join("");
         document.getElementById('rainfallOutlook').innerText =
           'Demo factor active';
         document.getElementById('gaugeDistance').innerText =
