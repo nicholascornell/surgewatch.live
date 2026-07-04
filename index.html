@@ -282,7 +282,7 @@
 
       <nav>
         <span>Live Data</span>
-        <span>SurgeScore</span>
+        <span>Rain Readiness Score™</span>
         <span>Alerts</span>
       </nav>
     </header>
@@ -306,7 +306,7 @@
       <div class="card" id="resultCard">
         <div class="score">
           <div>
-            <div class="section-title" style="margin-bottom: 8px;">SurgeScore</div>
+            <div class="section-title" style="margin-bottom: 8px;">Rain Readiness Score™</div>
             <strong id="scoreNumber">--</strong>
           </div>
           <div class="pill" id="riskLevel">READY</div>
@@ -337,7 +337,7 @@
         </div>
 
         <div class="feature">
-          <h3>Custom SurgeScore</h3>
+          <h3>Custom Rain Readiness Score™</h3>
           <p>A coded risk engine will combine rainfall, gauge trends, flood alerts, drainage context, and historic patterns into one simple score.</p>
         </div>
 
@@ -456,22 +456,22 @@
         const demoTideRisk = 15; // later this will come from NOAA tide data
 const demoDrainageRisk = 10; // later this can use pavement/drainage data
 
-const surgeScore = Math.min(
+const Rain Readiness Score™ = Math.min(
   100,
   elevationRisk + alertRisk + demoRainRisk + demoGaugeRisk + demoTideRisk + demoDrainageRisk
 );
 
-const readinessScore = Math.max(0, 100 - surgeScore);
+const readinessScore = Math.max(0, 100 - Rain Readiness Score™);
 
-        document.getElementById('scoreNumber').innerText = surgeScore;
+        document.getElementById('scoreNumber').innerText = Rain Readiness Score™;
 
         let level = 'LOW';
 
-        if (surgeScore >= 80) {
+        if (Rain Readiness Score™ >= 80) {
           level = 'DANGEROUS';
-        } else if (surgeScore >= 60) {
+        } else if (Rain Readiness Score™ >= 60) {
           level = 'ELEVATED';
-        } else if (surgeScore >= 35) {
+        } else if (Rain Readiness Score™ >= 35) {
           level = 'WATCH';
         }
 
@@ -483,7 +483,7 @@ document.getElementById('readinessLabel').innerText =
   readinessScore + '/100';
 
 document.getElementById('futureTrend').innerText =
-  surgeScore >= 60 ? 'Risk rising' : 'Stable for now';
+  Rain Readiness Score™ >= 60 ? 'Risk rising' : 'Stable for now';
         document.getElementById('rainfallOutlook').innerText =
           'Demo factor active';
         document.getElementById('gaugeDistance').innerText =
