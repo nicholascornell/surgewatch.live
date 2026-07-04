@@ -470,29 +470,26 @@ color:#d6dce8;
           elevationRisk = 5;
         }
 
-        let demoRainRisk = 0;
-
-const weatherResponse = await fetch(
-  `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=precipitation&forecast_days=1&timezone=auto&precipitation_unit=inch`
+        const backendResponse = await fetch(
+  "https://mlwjgbyvikhpxrthvdec.supabase.co/functions/v1/readiness",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      lat,
+      lon
+    })
+  }
 );
 
-const weatherData = await weatherResponse.json();
+const backendData = await backendResponse.json();
 
-const nextRain = weatherData.hourly.precipitation.slice(0, 12);
-const totalRain = nextRain.reduce((sum, amount) => sum + amount, 0);
+const demoRainRisk = backendData.rainRisk;
 
-if (totalRain >= 2) {
-  demoRainRisk = 35;
-} else if (totalRain >= 1) {
-  demoRainRisk = 25;
-} else if (totalRain >= 0.25) {
-  demoRainRisk = 12;
-} else {
-  demoRainRisk = 3;
-}
-
-document.getElementById('rainfallOutlook').innerText =
-  totalRain.toFixed(2) + ' inches expected next 12 hrs';
+document.getElementById("rainfallOutlook").innerText =
+  backendData.message;
         const demoGaugeRisk = 12;
 
 let demoTideRisk = 0;
