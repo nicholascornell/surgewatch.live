@@ -442,10 +442,26 @@ document.getElementById('baseFloodElevation').innerText =
   'Coming soon';
          
 
-        let alertRisk = 0;
+       const nwsResponse = await fetch(
+  "https://mlwjgbyvikhpxrthvdec.supabase.co/functions/v1/nws",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      lat,
+      lon
+    })
+  }
+);
 
-document.getElementById('realAlertStatus').innerText =
-  'NWS check paused';
+const nwsData = await nwsResponse.json();
+
+document.getElementById("realAlertStatus").innerText =
+  nwsData.alertText;
+
+const alertRisk = nwsData.alertRisk;
 
         let elevationRisk = 0;
 
