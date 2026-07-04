@@ -490,7 +490,32 @@ document.getElementById('rainfallOutlook').innerText =
   totalRain.toFixed(2) + ' inches expected next 12 hrs';
         const demoGaugeRisk = 12;
 
-        const demoTideRisk = 15; // later this will come from NOAA tide data
+let demoTideRisk = 0;
+
+const tideStation = "8518750"; // The Battery, NY - useful for Hoboken / NYC harbor
+const today = new Date();
+const yyyyMMdd = today.toISOString().slice(0, 10).replaceAll("-", "");
+
+const tideResponse = await fetch(
+  `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=SurgeWatch&begin_date=${yyyyMMdd}&range=24&datum=MLLW&station=${tideStation}&time_zone=lst_ldt&units=english&interval=hilo&format=json`
+);
+
+const tideData = await tideResponse.json();
+
+let nextHighTideText = "No high tide found today";
+
+if (tideData.predictions && tideData.predictions.length > 0) {
+  const highTides = tideData.predictions.filter(tide => tide.type === "H");
+
+  if (highTides.length > 0) {
+    const nextHigh = highTides[0];
+    nextHighTideText = `${nextHigh.t} / ${nextHigh.v} ft`;
+
+    demoTideRisk = 15;
+  }
+}
+
+document.getElementById("tideOverlap").innerText = nextHighTideText;// later this will come from NOAA tide data
 const demoDrainageRisk = 10; // later this can use pavement/drainage data
 
 const surgeScore = Math.min(
@@ -519,8 +544,7 @@ const readinessScore = Math.max(0, 100 - surgeScore);
        
 
         document.getElementById('riskLevel').innerText = level;
-        document.getElementById('tideOverlap').innerText =
-  'Demo: possible high tide overlap';
+        
 
 document.getElementById('readinessLabel').innerText =
   readinessScore + '/100';
