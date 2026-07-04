@@ -516,26 +516,7 @@ document.getElementById("gaugeDistance").innerText =
 
 document.getElementById("femaZone").innerText =
   femaData.zone;
-          const usgsResponse = await fetch(
-  "https://mlwjgbyvikhpxrthvdec.supabase.co/functions/v1/usgs",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      lat,
-      lon
-    })
-  }
-);
-
-const usgsData = await usgsResponse.json();
-
-console.log("USGS:", usgsData);
-
-document.getElementById("gaugeDistance").innerText =
-  usgsData.gauge;
+        
 
 document.getElementById("baseFloodElevation").innerText =
   femaData.bfe;
