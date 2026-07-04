@@ -436,9 +436,9 @@ color:#d6dce8;
 
         const nwsData = await nwsResponse.json();
 
-        const floodAlerts = nwsData.features.filter(alert =>
-          alert.properties.event.toLowerCase().includes('flood')
-        );
+        const floodAlerts = (nwsData.features || []).filter(alert =>
+  alert.properties.event.toLowerCase().includes('flood')
+);
 
         let alertRisk = 0;
 
