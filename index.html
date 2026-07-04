@@ -471,18 +471,29 @@ color:#d6dce8;
         const demoTideRisk = 15; // later this will come from NOAA tide data
 const demoDrainageRisk = 10; // later this can use pavement/drainage data
 
-const Rain Readiness Score™ = Math.min(
+const surgeScore = Math.min(
   100,
-  elevationRisk + alertRisk + demoRainRisk + demoGaugeRisk + demoTideRisk + demoDrainageRisk
+  elevationRisk +
+  alertRisk +
+  demoRainRisk +
+  demoGaugeRisk +
+  demoTideRisk +
+  demoDrainageRisk
 );
 
-const readinessScore = Math.max(0, 100 - Rain Readiness Score™);
+const readinessScore = Math.max(0, 100 - surgeScore);
 
-        document.getElementById('scoreNumber').innerText = Rain Readiness Score™;
+        document.getElementById('scoreNumber').innerText = surgeScore;
 
         let level = 'LOW';
 
-        if (Rain Readiness Score™ >= 80) {
+       if (surgeScore >= 80) {
+  level = 'DANGEROUS';
+} else if (surgeScore >= 60) {
+  level = 'ELEVATED';
+} else if (surgeScore >= 35) {
+  level = 'WATCH';
+}
           level = 'DANGEROUS';
         } else if (Rain Readiness Score™ >= 60) {
           level = 'ELEVATED';
