@@ -479,6 +479,27 @@ console.log("Backend data:", backendData);
 
 const demoRainRisk = backendData.rainRisk || 3;
 
+          const femaResponse = await fetch(
+  "https://mlwjgbyvikhpxrthvdec.supabase.co/functions/v1/fema",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      lat,
+      lon
+    })
+  }
+);
+
+const femaData = await femaResponse.json();
+
+document.getElementById("femaZone").innerText =
+  femaData.zone;
+
+document.getElementById("baseFloodElevation").innerText =
+  femaData.bfe;
 document.getElementById("rainfallOutlook").innerText =
   backendData.message || "Backend rainfall unavailable";
         const demoGaugeRisk = 12;
