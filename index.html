@@ -430,32 +430,39 @@ color:#d6dce8;
         document.getElementById('elevationLabel').innerText =
           feet + ' ft above sea level';
 
-        const nwsResponse = await fetch(
-          `https://api.weather.gov/alerts/active?point=${lat},${lon}`
-        );
-
-        const nwsData = await nwsResponse.json();
-
-        const floodAlerts = (nwsData.features || []).filter(alert =>
-  alert.properties.event.toLowerCase().includes('flood')
-);
-
         let alertRisk = 0;
 
-        if (floodAlerts.length > 0) {
-          const eventName = floodAlerts[0].properties.event;
-          document.getElementById('realAlertStatus').innerText = eventName;
+try {
+  const nwsResponse = await fetch(
+    `https://api.weather.gov/alerts/active?point=${lat},${lon}`
+  );
 
-          if (eventName.toLowerCase().includes('warning')) {
-            alertRisk = 40;
-          } else if (eventName.toLowerCase().includes('watch')) {
-            alertRisk = 25;
-          } else {
-            alertRisk = 15;
-          }
-        } else {
-          document.getElementById('realAlertStatus').innerText =
-            'No active flood alerts';
+  const nwsData = await nwsResponse.json();
+
+  const floodAlerts = (nwsData.features || []).filter(alert =>
+    alert.properties.event.toLowerCase().includes('flood')
+  );
+
+  if (floodAlerts.length > 0) {
+    const eventName = floodAlerts[0].properties.event;
+    document.getElementById('realAlertStatus').innerText = eventName;
+
+    if (eventName.toLowerCase().includes('warning')) {
+      alertRisk = 40;
+    } else if (eventName.toLowerCase().includes('watch')) {
+      alertRisk = 25;
+    } else {
+      alertRisk = 15;
+    }
+  } else {
+    document.getElementById('realAlertStatus').innerText =
+      'No active flood alerts';
+  }
+} catch (nwsError) {
+  console.warn("NWS alert check failed:", nwsError);
+  document.getElementById('realAlertStatus').innerText =
+    'NWS unavailable';
+}
         }
 
         let elevationRisk = 0;
