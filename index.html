@@ -510,7 +510,7 @@ const femaData = await femaResponse.json();
 );
 
 const usgsData = await usgsResponse.json();
-
+console.log(usgsData);
 document.getElementById("gaugeDistance").innerText =
   usgsData.gauge;
 
