@@ -784,12 +784,24 @@
 
       try {
         const isZip = /^\d{5}$/.test(input);
-        const geoUrl = isZip
-          ? `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&postalcode=${encodeURIComponent(input)}`
-          : `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=${encodeURIComponent(input)}`;
+        const geoQueries = isZip
+          ? [
+              `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=${encodeURIComponent(input + ' United States')}`,
+              `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&postalcode=${encodeURIComponent(input)}`
+            ]
+          : [
+              `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=${encodeURIComponent(input)}`
+            ];
 
-        const geoResponse = await fetch(geoUrl);
-        const geoData = await geoResponse.json();
+        let geoData = [];
+        for (const geoUrl of geoQueries) {
+          const geoResponse = await fetch(geoUrl);
+          const possibleGeoData = await geoResponse.json();
+          if (Array.isArray(possibleGeoData) && possibleGeoData.length) {
+            geoData = possibleGeoData;
+            break;
+          }
+        }
         if (!geoData.length) throw new Error('Address not found');
 
         const lat = parseFloat(geoData[0].lat);
