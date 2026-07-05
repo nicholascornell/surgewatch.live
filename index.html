@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-<link rel="manifest" href="/site.webmanifest">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SurgeWatch | Live Flood Intelligence</title>
@@ -16,6 +16,9 @@
       --white: #F8FAFC;
       --muted: #A9B2C3;
       --line: rgba(248, 250, 252, 0.14);
+      --green: #65f0a4;
+      --orange: #ffbd59;
+      --red: #ff6b6b;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -190,6 +193,11 @@
       letter-spacing: 0.08em;
     }
 
+    .pill.low { border-color: var(--green); color: var(--green); }
+    .pill.watch { border-color: var(--yellow); color: var(--yellow); }
+    .pill.elevated { border-color: var(--orange); color: var(--orange); }
+    .pill.dangerous { border-color: var(--red); color: var(--red); }
+
     .metrics { display: grid; gap: 12px; }
 
     .metric {
@@ -215,6 +223,49 @@
       margin-bottom: 18px;
     }
 
+    .why-box {
+      margin-top: 10px;
+      border-top: 1px solid rgba(255,255,255,.12);
+      padding-top: 22px;
+    }
+
+    .why-box h3 {
+      color: var(--yellow);
+      margin-bottom: 12px;
+      font-size: 1.05rem;
+    }
+
+    #whyList {
+      list-style: none;
+      display: grid;
+      gap: 10px;
+      color: #d6dce8;
+      line-height: 1.55;
+      font-size: 0.94rem;
+    }
+
+    #whyList li {
+      position: relative;
+      padding-left: 25px;
+    }
+
+    #whyList li::before {
+      content: "•";
+      color: var(--yellow);
+      position: absolute;
+      left: 5px;
+      font-weight: 900;
+    }
+
+    #whySummary {
+      margin-top: 16px;
+      color: var(--white);
+      line-height: 1.55;
+      font-size: 0.95rem;
+      border-left: 3px solid var(--yellow);
+      padding-left: 12px;
+    }
+
     .features {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -222,9 +273,7 @@
       margin-top: 16px;
     }
 
-    .feature {
-      padding: 22px;
-    }
+    .feature { padding: 22px; }
 
     .feature h3 {
       font-size: 1rem;
@@ -272,9 +321,10 @@
       .waitlist { grid-template-columns: 1fr; }
       footer { flex-direction: column; }
       input, .button { width: 100%; text-align: center; }
+      .metric { flex-direction: column; gap: 5px; }
+      .metric b { text-align: left; }
     }
   </style>
-
 </head>
 
 <body>
@@ -314,39 +364,30 @@
             <div class="section-title" style="margin-bottom: 8px;">Rain Readiness Score™</div>
             <strong id="scoreNumber">--</strong>
           </div>
-          <div class="pill" id="riskLevel">READY</div>
+          <div class="pill low" id="riskLevel">READY</div>
         </div>
 
         <div class="metrics">
           <div class="metric"><span>Address monitored</span><b id="addressLabel">Enter an address</b></div>
           <div class="metric"><span>Coordinates</span><b id="coordsLabel">--</b></div>
-        <div class="metric"><span>Ground elevation (estimated)</span><b id="elevationLabel">--</b></div>
-<div class="metric"><span>FEMA Flood Zone</span><b id="femaZone">Coming soon</b></div>
-<div class="metric"><span>Base Flood Elevation</span><b id="baseFloodElevation">Coming soon</b></div>
-
-
+          <div class="metric"><span>Ground elevation estimated</span><b id="elevationLabel">--</b></div>
+          <div class="metric"><span>FEMA Flood Zone</span><b id="femaZone">Not checked</b></div>
+          <div class="metric"><span>Base Flood Elevation</span><b id="baseFloodElevation">Not checked</b></div>
           <div class="metric"><span>Real NWS alert check</span><b id="realAlertStatus">Not checked</b></div>
-          <div class="metric"><span>Rainfall outlook</span><b id="rainfallOutlook">Coming soon</b></div>
+          <div class="metric"><span>Rainfall outlook</span><b id="rainfallOutlook">Not checked</b></div>
           <div class="metric"><span>High tide overlap</span><b id="tideOverlap">Coming soon</b></div>
-<div class="metric"><span>Neighborhood readiness</span><b id="readinessLabel">--</b></div>
-<div class="metric"><span>Next 12 hours</span><b id="futureTrend">--</b></div>
-          <div class="metric"><span>Nearest USGS gauge</span><b id="gaugeDistance">Coming soon</b></div>
+          <div class="metric"><span>Neighborhood readiness</span><b id="readinessLabel">--</b></div>
+          <div class="metric"><span>Next 12 hours</span><b id="futureTrend">--</b></div>
+          <div class="metric"><span>Nearest USGS gauge</span><b id="gaugeDistance">Not checked</b></div>
           <div class="metric"><span>Notification mode</span><b>Ready</b></div>
-          <hr style="margin:22px 0;border:0;border-top:1px solid rgba(255,255,255,.12);">
+        </div>
 
-<h3 style="color:#FFF600;margin-bottom:12px;">
-Why this score?
-</h3>
-
-<ul id="whyList" style="
-line-height:1.8;
-padding-left:20px;
-color:#d6dce8;
-">
-
-<li>Waiting for analysis...</li>
-
-</ul>
+        <div class="why-box">
+          <h3>Why this score?</h3>
+          <ul id="whyList">
+            <li>Enter an address to generate a live explanation.</li>
+          </ul>
+          <p id="whySummary">SurgeWatch will explain the score using live rainfall, elevation, FEMA, NWS, and USGS inputs.</p>
         </div>
       </div>
     </section>
@@ -362,7 +403,7 @@ color:#d6dce8;
 
         <div class="feature">
           <h3>Custom Rain Readiness Score™</h3>
-          <p>A coded risk engine will combine rainfall, gauge trends, flood alerts, drainage context, and historic patterns into one simple score.</p>
+          <p>A coded risk engine combines rainfall, gauge trends, flood alerts, drainage context, and site conditions into one simple score.</p>
         </div>
 
         <div class="feature">
@@ -390,228 +431,309 @@ color:#d6dce8;
   </main>
 
   <script>
+    const SUPABASE_FUNCTION_BASE = "https://mlwjgbyvikhpxrthvdec.supabase.co/functions/v1";
+
+    function setText(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.innerText = text;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function updateRiskPill(level) {
+      const pill = document.getElementById("riskLevel");
+      pill.innerText = level;
+      pill.className = "pill " + level.toLowerCase();
+    }
+
+    function getRiskLevel(score) {
+      if (score >= 80) return "DANGEROUS";
+      if (score >= 60) return "ELEVATED";
+      if (score >= 35) return "WATCH";
+      return "LOW";
+    }
+
+    function resetResults(input) {
+      setText("addressLabel", input);
+      setText("coordsLabel", "Looking up location...");
+      setText("elevationLabel", "Checking elevation...");
+      setText("femaZone", "Checking FEMA...");
+      setText("baseFloodElevation", "Checking FEMA...");
+      setText("realAlertStatus", "Checking NWS...");
+      setText("rainfallOutlook", "Checking rainfall...");
+      setText("tideOverlap", "Backend coming soon");
+      setText("readinessLabel", "--");
+      setText("futureTrend", "--");
+      setText("gaugeDistance", "Checking USGS...");
+      setText("scoreNumber", "--");
+      updateRiskPill("WATCH");
+      document.getElementById("whyList").innerHTML = "<li>Analyzing live conditions...</li>";
+      setText("whySummary", "SurgeWatch is checking the live data sources for this location.");
+    }
+
+    async function postToFunction(functionName, payload) {
+      const response = await fetch(`${SUPABASE_FUNCTION_BASE}/${functionName}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`${functionName} backend returned ${response.status}`);
+      }
+
+      return response.json();
+    }
+
+    async function geocodeAddress(input) {
+      const isZip = /^\d{5}$/.test(input);
+      const geoUrl = isZip
+        ? `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&postalcode=${encodeURIComponent(input)}`
+        : `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=${encodeURIComponent(input)}`;
+
+      const geoResponse = await fetch(geoUrl);
+      const geoData = await geoResponse.json();
+
+      if (!geoData.length) throw new Error("Address not found");
+
+      return {
+        lat: parseFloat(geoData[0].lat),
+        lon: parseFloat(geoData[0].lon),
+        displayName: geoData[0].display_name || input
+      };
+    }
+
+    async function getElevationFeet(lat, lon) {
+      const elevationResponse = await fetch(
+        `https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`
+      );
+      const elevationData = await elevationResponse.json();
+      const meters = Array.isArray(elevationData.elevation) ? elevationData.elevation[0] : null;
+      if (meters === null || meters === undefined) throw new Error("Elevation unavailable");
+      return Math.round(meters * 3.28084);
+    }
+
+    function calculateElevationRisk(feet) {
+      if (feet < 20) return 35;
+      if (feet < 100) return 25;
+      if (feet < 500) return 12;
+      return 5;
+    }
+
+    function calculateFemaRisk(femaData) {
+      const zone = String(femaData?.zone || "").toUpperCase();
+      if (!zone || zone.includes("UNAVAILABLE") || zone.includes("COMING")) return 0;
+      if (zone.includes("VE") || zone.includes("V")) return 25;
+      if (zone.includes("AE") || zone === "A" || zone.includes("AO") || zone.includes("AH")) return 20;
+      if (zone.includes("SHADED X") || zone.includes("0.2")) return 8;
+      if (zone === "X" || zone.includes("ZONE X")) return 2;
+      return 5;
+    }
+
+    function calculateGaugeRisk(usgsData) {
+      const gaugeText = String(usgsData?.gauge || "").toLowerCase();
+      if (gaugeText.includes("flood") || gaugeText.includes("high") || gaugeText.includes("elevated")) return 20;
+      if (gaugeText.includes("rising") || gaugeText.includes("watch")) return 12;
+      if (gaugeText.includes("normal") || gaugeText.includes("stable")) return 3;
+      return 8;
+    }
+
+    function cleanValue(value, fallback = "Unavailable") {
+      if (value === null || value === undefined || value === "") return fallback;
+      return String(value);
+    }
+
+    function generateWhyThisScore(data) {
+      const reasons = [];
+      const {
+        surgeScore,
+        level,
+        feet,
+        elevationRisk,
+        alertRisk,
+        rainRisk,
+        femaRisk,
+        gaugeRisk,
+        drainageRisk,
+        tideRisk,
+        nwsData,
+        backendData,
+        femaData,
+        usgsData
+      } = data;
+
+      if (rainRisk >= 20) {
+        reasons.push("Forecast rainfall is a major driver of the current score and may increase runoff or flash-flood potential.");
+      } else if (rainRisk >= 10) {
+        reasons.push("Some rainfall risk is present in the forecast, but it is not currently the strongest risk factor.");
+      } else {
+        reasons.push("Rainfall risk is currently low based on the available forecast data.");
+      }
+
+      if (alertRisk > 0) {
+        reasons.push(`National Weather Service alert data is contributing to the score: ${cleanValue(nwsData?.alertText, "an alert may be active")}.`);
+      } else {
+        reasons.push("No active National Weather Service flood alert is currently increasing the score for this location.");
+      }
+
+      if (femaRisk >= 20) {
+        reasons.push(`FEMA flood-zone data indicates mapped flood exposure for this location: ${cleanValue(femaData?.zone)}.`);
+      } else if (femaRisk > 0) {
+        reasons.push(`FEMA flood-zone data is being factored in: ${cleanValue(femaData?.zone)}.`);
+      } else {
+        reasons.push("FEMA flood-zone data is not currently adding major risk, or the flood-zone result is unavailable.");
+      }
+
+      if (feet < 100) {
+        reasons.push(`Estimated ground elevation is relatively low at about ${feet} ft, which can increase flood exposure depending on local drainage and nearby waterways.`);
+      } else if (feet < 500) {
+        reasons.push(`Estimated ground elevation is about ${feet} ft, so elevation adds some context but is not the main risk driver.`);
+      } else {
+        reasons.push(`Estimated ground elevation is about ${feet} ft, which lowers broad coastal-style flood exposure but does not eliminate local flash-flood risk.`);
+      }
+
+      if (gaugeRisk >= 15) {
+        reasons.push(`Nearby USGS gauge conditions may be elevated: ${cleanValue(usgsData?.gauge)}.`);
+      } else if (gaugeRisk > 5) {
+        reasons.push("Nearby USGS gauge data is available but does not currently appear to show severe flood conditions.");
+      } else {
+        reasons.push("Nearby river-gauge conditions appear normal or are adding only minor risk at this time.");
+      }
+
+      if (drainageRisk > 0) {
+        reasons.push("A prototype urban-drainage factor is included because heavy rain can overwhelm streets, culverts, and storm drains even away from mapped flood zones.");
+      }
+
+      if (tideRisk > 0) {
+        reasons.push("Tide timing may affect drainage capacity in coastal areas.");
+      } else {
+        reasons.push("High-tide overlap is not active yet in this prototype, so it is not affecting the current score.");
+      }
+
+      if (backendData?.message) {
+        reasons.push(`Rainfall outlook: ${backendData.message}`);
+      }
+
+      const summary = level === "DANGEROUS"
+        ? "Multiple live indicators are contributing to dangerous flood potential. Follow local emergency guidance and monitor official alerts."
+        : level === "ELEVATED"
+          ? "Several conditions are raising the flood-risk score. This location should be monitored closely over the next 12 hours."
+          : level === "WATCH"
+            ? "Some risk factors are present, but current conditions do not indicate the highest flood-risk category."
+            : "Current live indicators suggest relatively low flood risk, while conditions may still change with new rainfall or alerts.";
+
+      document.getElementById("whyList").innerHTML = reasons
+        .filter(Boolean)
+        .map(reason => `<li>${escapeHtml(reason)}</li>`)
+        .join("");
+
+      setText("whySummary", summary);
+    }
+
     async function runSurgeWatch() {
-      const input = document.getElementById('addressInput').value.trim();
+      const input = document.getElementById("addressInput").value.trim();
 
       if (!input) {
-        alert('Please enter an address or ZIP code.');
+        alert("Please enter an address or ZIP code.");
         return;
       }
 
-      document.getElementById('addressLabel').innerText = input;
-      document.getElementById('coordsLabel').innerText = 'Looking up location...';
-      document.getElementById('elevationLabel').innerText = 'Checking elevation...';
-      document.getElementById('realAlertStatus').innerText = 'Checking NWS...';
-      document.getElementById('scoreNumber').innerText = '--';
-      document.getElementById('riskLevel').innerText = 'CHECKING';
+      resetResults(input);
 
       try {
-        const isZip = /^\d{5}$/.test(input);
+        const { lat, lon } = await geocodeAddress(input);
 
-const geoUrl = isZip
-  ? `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&postalcode=${encodeURIComponent(input)}`
-  : `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=${encodeURIComponent(input)}`;
+        setText("coordsLabel", `${lat.toFixed(4)}, ${lon.toFixed(4)}`);
 
-        const geoResponse = await fetch(geoUrl);
-        const geoData = await geoResponse.json();
+        const feet = await getElevationFeet(lat, lon);
+        setText("elevationLabel", `${feet} ft`);
 
-        if (!geoData.length) {
-          throw new Error('Address not found');
-        }
+        const [nwsResult, rainfallResult, femaResult, usgsResult] = await Promise.allSettled([
+          postToFunction("nws", { lat, lon }),
+          postToFunction("readiness", { lat, lon }),
+          postToFunction("fema", { lat, lon }),
+          postToFunction("usgs", { lat, lon })
+        ]);
 
-        const lat = parseFloat(geoData[0].lat);
-        const lon = parseFloat(geoData[0].lon);
+        const nwsData = nwsResult.status === "fulfilled" ? nwsResult.value : { alertText: "NWS unavailable", alertRisk: 0 };
+        const backendData = rainfallResult.status === "fulfilled" ? rainfallResult.value : { message: "Backend rainfall unavailable", rainRisk: 3 };
+        const femaData = femaResult.status === "fulfilled" ? femaResult.value : { zone: "Unavailable", bfe: "Unavailable" };
+        const usgsData = usgsResult.status === "fulfilled" ? usgsResult.value : { station: "USGS unavailable", gauge: "Unavailable" };
 
-        document.getElementById('coordsLabel').innerText =
-          lat.toFixed(4) + ', ' + lon.toFixed(4);
+        console.log("NWS data:", nwsData);
+        console.log("Rainfall data:", backendData);
+        console.log("FEMA data:", femaData);
+        console.log("USGS data:", usgsData);
 
-        const elevationResponse = await fetch(
-          `https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`
+        const alertRisk = Number(nwsData.alertRisk || 0);
+        const rainRisk = Number(backendData.rainRisk || 3);
+        const elevationRisk = calculateElevationRisk(feet);
+        const femaRisk = calculateFemaRisk(femaData);
+        const gaugeRisk = calculateGaugeRisk(usgsData);
+        const tideRisk = 0;
+        const drainageRisk = 10;
+
+        setText("realAlertStatus", cleanValue(nwsData.alertText));
+        setText("rainfallOutlook", cleanValue(backendData.message, "Backend rainfall unavailable"));
+        setText("femaZone", cleanValue(femaData.zone));
+        setText("baseFloodElevation", cleanValue(femaData.bfe));
+
+        document.getElementById("gaugeDistance").innerHTML =
+          `<span style="font-size:12px;color:#999">${escapeHtml(cleanValue(usgsData.station, "Nearest station unavailable"))}</span><br>${escapeHtml(cleanValue(usgsData.gauge))}`;
+
+        setText("tideOverlap", "Backend coming soon");
+
+        const surgeScore = Math.min(
+          100,
+          Math.round(elevationRisk + alertRisk + rainRisk + femaRisk + gaugeRisk + tideRisk + drainageRisk)
         );
 
-        const elevationData = await elevationResponse.json();
-        const meters = elevationData.elevation[0];
-        const feet = Math.round(meters * 3.28084);
+        const readinessScore = Math.max(0, 100 - surgeScore);
+        const level = getRiskLevel(surgeScore);
 
-        document.getElementById('elevationLabel').innerText =
-          feet + ' ft Ground elevation (estimated)';
-          document.getElementById('femaZone').innerText =
-  'Coming soon';
+        setText("scoreNumber", surgeScore);
+        updateRiskPill(level);
+        setText("readinessLabel", `${readinessScore}/100`);
+        setText("futureTrend", surgeScore >= 60 ? "Risk rising" : "Stable for now");
 
-document.getElementById('baseFloodElevation').innerText =
-  'Coming soon';
-         
-
-       const nwsResponse = await fetch(
-  "https://mlwjgbyvikhpxrthvdec.supabase.co/functions/v1/nws",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      lat,
-      lon
-    })
-  }
-);
-
-const nwsData = await nwsResponse.json();
-
-document.getElementById("realAlertStatus").innerText =
-  nwsData.alertText;
-
-const alertRisk = nwsData.alertRisk;
-
-        let elevationRisk = 0;
-
-        if (feet < 20) {
-          elevationRisk = 35;
-        } else if (feet < 100) {
-          elevationRisk = 25;
-        } else if (feet < 500) {
-          elevationRisk = 12;
-        } else {
-          elevationRisk = 5;
-        }
-
-        const backendResponse = await fetch(
-  "https://mlwjgbyvikhpxrthvdec.supabase.co/functions/v1/readiness",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      lat,
-      lon
-    })
-  }
-);
-
-const backendData = await backendResponse.json();
-
-console.log("Backend data:", backendData);
-
-const demoRainRisk = backendData.rainRisk || 3;
-
-          const femaResponse = await fetch(
-  "https://mlwjgbyvikhpxrthvdec.supabase.co/functions/v1/fema",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      lat,
-      lon
-    })
-  }
-);
-
-const femaData = await femaResponse.json();
-          const usgsResponse = await fetch(
-  "https://mlwjgbyvikhpxrthvdec.supabase.co/functions/v1/usgs",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-        
-    },
-    body: JSON.stringify({
-      lat,
-      lon
-    })
-  }
-);
-
-const usgsData = await usgsResponse.json();
-console.log(usgsData);
-document.getElementById("gaugeDistance").innerHTML =
-  `<span style="font-size:12px;color:#999">${usgsData.station}</span><br>${usgsData.gauge}`;
-document.getElementById("femaZone").innerText =
-  femaData.zone;
-        
-
-document.getElementById("baseFloodElevation").innerText =
-  femaData.bfe;
-document.getElementById("rainfallOutlook").innerText =
-  backendData.message || "Backend rainfall unavailable";
-        const demoGaugeRisk = 12;
-
-let demoTideRisk = 0;
-
-
-
-document.getElementById("tideOverlap").innerText =
-  "Backend coming soon";// later this will come from NOAA tide data
-const demoDrainageRisk = 10; // later this can use pavement/drainage data
-
-const surgeScore = Math.min(
-  100,
-  elevationRisk +
-  alertRisk +
-  demoRainRisk +
-  demoGaugeRisk +
-  demoTideRisk +
-  demoDrainageRisk
-);
-
-const readinessScore = Math.max(0, 100 - surgeScore);
-
-        document.getElementById('scoreNumber').innerText = surgeScore;
-
-        let level = 'LOW';
-
-       if (surgeScore >= 80) {
-  level = 'DANGEROUS';
-} else if (surgeScore >= 60) {
-  level = 'ELEVATED';
-} else if (surgeScore >= 35) {
-  level = 'WATCH';
-}
-       
-
-        document.getElementById('riskLevel').innerText = level;
-        
-
-document.getElementById('readinessLabel').innerText =
-  readinessScore + '/100';
-
-document.getElementById('futureTrend').innerText =
-  surgeScore >= 60 ? 'Risk rising' : 'Stable for now';
-        const reasons = [];
-
-if (elevationRisk >= 25)
-    reasons.push("Low elevation increases flood exposure.");
-
-if (alertRisk > 0)
-    reasons.push("An official National Weather Service flood alert is active.");
-
-if (demoRainRisk > 10)
-    reasons.push("Heavy rainfall is expected.");
-
-if (demoTideRisk > 10)
-    reasons.push("High tide may reduce drainage capacity.");
-
-if (demoDrainageRisk > 5)
-    reasons.push("Urban drainage may become overwhelmed.");
-
-document.getElementById("whyList").innerHTML =
-    reasons.map(r => `<li>${r}</li>`).join("");
-        
-        
-
-        document.getElementById('resultCard').scrollIntoView({
-          behavior: 'smooth'
+        generateWhyThisScore({
+          surgeScore,
+          level,
+          feet,
+          elevationRisk,
+          alertRisk,
+          rainRisk,
+          femaRisk,
+          gaugeRisk,
+          drainageRisk,
+          tideRisk,
+          nwsData,
+          backendData,
+          femaData,
+          usgsData
         });
 
+        document.getElementById("resultCard").scrollIntoView({ behavior: "smooth" });
       } catch (error) {
-        document.getElementById('coordsLabel').innerText = 'Location unavailable';
-        document.getElementById('elevationLabel').innerText = 'Unavailable';
-        document.getElementById('realAlertStatus').innerText = 'Unavailable';
-        document.getElementById('riskLevel').innerText = 'ERROR';
         console.error(error);
+        setText("coordsLabel", "Location unavailable");
+        setText("elevationLabel", "Unavailable");
+        setText("realAlertStatus", "Unavailable");
+        setText("rainfallOutlook", "Unavailable");
+        setText("femaZone", "Unavailable");
+        setText("baseFloodElevation", "Unavailable");
+        setText("gaugeDistance", "Unavailable");
+        setText("scoreNumber", "--");
+        updateRiskPill("DANGEROUS");
+        document.getElementById("whyList").innerHTML = "<li>The address could not be analyzed. Try a more complete address or a ZIP code.</li>";
+        setText("whySummary", "SurgeWatch could not complete the live analysis for this location.");
       }
     }
   </script>
