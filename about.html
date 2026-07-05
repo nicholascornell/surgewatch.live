@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About Nicholas Cornell | SurgeWatch</title>
+
+  <style>
+    :root {
+      --navy: #071026;
+      --yellow: #FFF600;
+      --white: #F8FAFC;
+      --muted: #A9B2C3;
+      --line: rgba(248, 250, 252, 0.14);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Inter, Helvetica, Arial, sans-serif;
+      background: radial-gradient(circle at top left, #10204a 0%, var(--navy) 42%, #030713 100%);
+      color: var(--white);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    .page {
+      width: min(1080px, 92%);
+      margin: 0 auto;
+      padding: 28px 0 60px;
+    }
+
+    header, footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      border-color: var(--line);
+    }
+
+    header {
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 22px;
+      margin-bottom: 56px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      letter-spacing: 0.08em;
+      font-weight: 950;
+      font-size: 1.1rem;
+    }
+
+    .mark {
+      width: 38px;
+      height: 38px;
+      border: 3px solid var(--yellow);
+      border-radius: 50%;
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 46px;
+      align-items: start;
+      margin-bottom: 54px;
+    }
+
+    .eyebrow {
+      color: var(--yellow);
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      font-size: 0.82rem;
+      font-weight: 900;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      font-size: clamp(3rem, 7vw, 5.6rem);
+      line-height: 0.92;
+      letter-spacing: -0.06em;
+      margin-bottom: 24px;
+    }
+
+    h1 span { color: var(--yellow); }
+
+    .lead {
+      color: var(--muted);
+      font-size: 1.15rem;
+      max-width: 720px;
+    }
+
+    .photo-card {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.045);
+      border-radius: 28px;
+      padding: 22px;
+    }
+
+    .photo-placeholder {
+      aspect-ratio: 4 / 5;
+      border: 1px dashed rgba(255,255,255,0.25);
+      border-radius: 22px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      text-align: center;
+      padding: 20px;
+    }
+
+    .timeline {
+      margin-top: 18px;
+      display: grid;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .timeline b {
+      color: var(--yellow);
+    }
+
+    .section {
+      border-top: 1px solid var(--line);
+      padding-top: 32px;
+      margin-top: 36px;
+    }
+
+    h2 {
+      color: var(--yellow);
+      font-size: 1.4rem;
+      margin-bottom: 14px;
+    }
+
+    p {
+      color: #d6dce8;
+      margin-bottom: 16px;
+      max-width: 820px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.045);
+      border-radius: 22px;
+      padding: 22px;
+    }
+
+    .card h3 {
+      color: var(--white);
+      margin-bottom: 10px;
+      font-size: 1rem;
+    }
+
+    ul {
+      list-style: none;
+      display: grid;
+      gap: 8px;
+      color: #d6dce8;
+    }
+
+    li::before {
+      content: "•";
+      color: var(--yellow);
+      font-weight: 950;
+      margin-right: 8px;
+    }
+
+    blockquote {
+      margin-top: 24px;
+      border-left: 3px solid var(--yellow);
+      padding-left: 18px;
+      color: var(--white);
+      font-size: 1.15rem;
+      font-weight: 700;
+      max-width: 760px;
+    }
+
+    footer {
+      margin-top: 56px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 850px) {
+      .hero, .grid {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <header>
+      <div class="brand">
+        <div class="mark"></div>
+        <div>SURGE<span style="color: var(--yellow);">WATCH</span></div>
+      </div>
+
+      <nav>
+        <a href="index.html">← Back to SurgeWatch</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div>
+        <div class="eyebrow">About Nicholas Cornell</div>
+        <h1>Engineering.<br />Data.<br /><span>Infrastructure.</span></h1>
+        <p class="lead">
+          SurgeWatch is an engineering project by Nicholas Cornell, inspired by Hurricane Sandy and built to make flood risk easier to understand through live data, transparent scoring, and site-specific analysis.
+        </p>
+      </div>
+
+      <div class="photo-card">
+        <div class="photo-placeholder">
+          Add Nicholas Cornell photo here
+        </div>
+
+        <div class="timeline">
+          <div><b>2012</b> — Hurricane Sandy floods his family home in Hoboken.</div>
+          <div><b>2026</b> — SurgeWatch.live begins as an engineering data project.</div>
+          <div><b>Future</b> — Systems engineering, infrastructure, and resilient construction.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>My Story</h2>
+
+      <p>
+        When I was growing up in Hoboken, New Jersey, Hurricane Sandy flooded my family's home with nearly five feet of water overnight. Our neighborhood was transformed, and for years afterward I saw firsthand how a single storm could affect homes, infrastructure, and entire communities.
+      </p>
+
+      <p>
+        That experience stayed with me. It made me curious about why flooding happens, why some places are more vulnerable than others, and how engineers can design communities that are better prepared.
+      </p>
+
+      <p>
+        Those questions eventually led me to build SurgeWatch. What began as a personal coding project has become an ongoing engineering project that combines live weather forecasts, FEMA flood maps, river gauges, elevation data, tide influence, and other public information into a transparent flood risk assessment.
+      </p>
+
+      <p>
+        My goal is not simply to predict flooding, but to help people understand the engineering behind it and make better decisions before flooding occurs.
+      </p>
+    </section>
+
+    <section class="section">
+      <h2>Why I Built SurgeWatch</h2>
+
+      <p>
+        Flooding is not caused by one thing. It is the result of many systems interacting at once: rainfall, elevation, drainage, rivers, tides, infrastructure, geology, and the built environment.
+      </p>
+
+      <p>
+        SurgeWatch was created to bring those systems together into one clear analysis. Instead of showing raw data alone, the platform explains why each factor matters and how it contributes to the overall flood risk score.
+      </p>
+    </section>
+
+    <section class="section">
+      <h2>Project Roadmap</h2>
+
+      <div class="grid">
+        <div class="card">
+          <h3>Live Today</h3>
+          <ul>
+            <li>National Weather Service alerts</li>
+            <li>FEMA flood zones</li>
+            <li>USGS river gauges</li>
+            <li>Ground elevation</li>
+            <li>Rainfall forecasts</li>
+            <li>Tide influence</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Coming Soon</h3>
+          <ul>
+            <li>Watershed analysis</li>
+            <li>Geologic history</li>
+            <li>Soil characteristics</li>
+            <li>Foundation engineering</li>
+            <li>Drainage modeling</li>
+            <li>AI-powered flood timing forecasts</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Long-Term Vision</h2>
+
+      <p>
+        As I continue studying engineering, I hope to expand SurgeWatch into a platform that incorporates watershed analysis, geology, soil conditions, drainage systems, construction risk, and infrastructure resilience.
+      </p>
+
+      <p>
+        I want to build tools that help homeowners, engineers, planners, and communities better understand flood risk and design more resilient places.
+      </p>
+
+      <blockquote>
+        Engineering is not just about building structures. It is about building better decisions.
+      </blockquote>
+    </section>
+
+    <section class="section">
+      <h2>Contact</h2>
+
+      <p>
+        <strong>Nicholas Cornell</strong><br />
+        Founder & Developer, SurgeWatch.live<br />
+        <a href="mailto:NCKKCornell@gmail.com" style="color:#FFF600;">NCKKCornell@gmail.com</a>
+      </p>
+    </section>
+
+    <footer>
+      <span>Created by Nicholas Cornell</span>
+      <span>SurgeWatch.live</span>
+    </footer>
+  </main>
+</body>
+</html>
