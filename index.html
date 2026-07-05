@@ -254,6 +254,58 @@
       margin-bottom: 7px;
     }
 
+
+    .score-window-label {
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 800;
+      margin-top: 6px;
+      letter-spacing: 0.02em;
+    }
+
+    .window-selector {
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 14px 0;
+      margin: 8px 0 18px;
+    }
+
+    .window-label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 900;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .window-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .window-btn {
+      border: 1px solid rgba(248,250,252,0.18);
+      background: rgba(255,255,255,0.045);
+      color: var(--white);
+      border-radius: 999px;
+      padding: 9px 8px;
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .window-btn:hover,
+    .window-btn.active {
+      border-color: var(--yellow);
+      background: var(--yellow);
+      color: #061026;
+    }
+
     .pill {
       border: 1px solid var(--yellow);
       color: var(--yellow);
@@ -468,6 +520,7 @@
       .layer:first-child { border-top: none; padding-top: 0; }
       .metric { grid-template-columns: 20px 1fr; }
       .metric b { grid-column: 2; text-align: left; max-width: 100%; }
+      .window-buttons { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
@@ -535,8 +588,19 @@
               <strong id="scoreNumber">--</strong>
               <span>/ 100</span>
             </div>
+            <div class="score-window-label" id="scoreWindowLabel">Window: Next 12 hours</div>
           </div>
           <div class="pill" id="riskLevel">READY</div>
+        </div>
+
+        <div class="window-selector" aria-label="Flood risk time window">
+          <div class="window-label">Risk Window</div>
+          <div class="window-buttons">
+            <button type="button" class="window-btn" data-hours="0" onclick="setRiskWindow(0)">Now</button>
+            <button type="button" class="window-btn active" data-hours="12" onclick="setRiskWindow(12)">12 hrs</button>
+            <button type="button" class="window-btn" data-hours="24" onclick="setRiskWindow(24)">24 hrs</button>
+            <button type="button" class="window-btn" data-hours="48" onclick="setRiskWindow(48)">48 hrs</button>
+          </div>
         </div>
 
         <div class="risk-scale" id="riskScale" style="--score-pos: 0;">
@@ -565,10 +629,10 @@
           <div class="metric"><span class="metric-icon">≋</span><span>FEMA Flood Zone</span><b id="femaZone">Coming soon</b></div>
           <div class="metric"><span class="metric-icon">↕</span><span>Base Flood Elevation</span><b id="baseFloodElevation">Coming soon</b></div>
           <div class="metric"><span class="metric-icon">◉</span><span>NWS alert status</span><b id="realAlertStatus">Not checked</b></div>
-          <div class="metric"><span class="metric-icon">☔</span><span>Rainfall outlook (next 12 hrs)</span><b id="rainfallOutlook">Coming soon</b></div>
+          <div class="metric"><span class="metric-icon">☔</span><span id="rainfallMetricLabel">Rainfall outlook (next 12 hrs)</span><b id="rainfallOutlook">Coming soon</b></div>
           <div class="metric"><span class="metric-icon">≋</span><span>High tide overlap</span><b id="tideOverlap">Coming soon</b></div>
           <div class="metric"><span class="metric-icon">⌂</span><span>Neighborhood readiness</span><b id="readinessLabel">--</b></div>
-          <div class="metric"><span class="metric-icon">◷</span><span>Next 12 hours</span><b id="futureTrend">--</b></div>
+          <div class="metric"><span class="metric-icon">◷</span><span id="trendMetricLabel">Next 12 hours</span><b id="futureTrend">--</b></div>
           <div class="metric"><span class="metric-icon">≋</span><span>Nearest USGS gauge</span><b class="linkish" id="gaugeDistance">Coming soon</b></div>
           <div class="metric"><span class="metric-icon">☁</span><span>Notification mode</span><b class="ready">Ready</b></div>
         </div>
@@ -622,6 +686,31 @@
   </main>
 
   <script>
+
+    let selectedWindowHours = 12;
+
+    function getWindowText(hours = selectedWindowHours) {
+      if (hours === 0) return 'Now';
+      return `Next ${hours} hours`;
+    }
+
+    function setRiskWindow(hours) {
+      selectedWindowHours = Number(hours);
+      document.querySelectorAll('.window-btn').forEach(btn => {
+        btn.classList.toggle('active', Number(btn.dataset.hours) === selectedWindowHours);
+      });
+
+      const windowText = getWindowText();
+      document.getElementById('scoreWindowLabel').innerText = `Window: ${windowText}`;
+      document.getElementById('rainfallMetricLabel').innerText = selectedWindowHours === 0 ? 'Rainfall outlook' : `Rainfall outlook (${windowText.toLowerCase()})`;
+      document.getElementById('trendMetricLabel').innerText = windowText;
+
+      const currentAddress = document.getElementById('addressInput').value.trim();
+      const hasScore = document.getElementById('scoreNumber').innerText !== '--';
+      if (currentAddress && hasScore) {
+        runSurgeWatch();
+      }
+    }
     function safeText(value, fallback = 'Unavailable') {
       if (value === null || value === undefined || value === '') return fallback;
       return String(value);
@@ -666,6 +755,8 @@
       const tideRisk = data.tideRisk || 0;
       const drainageRisk = data.drainageRisk || 0;
       const surgeScore = data.surgeScore || 0;
+      const windowText = data.windowText || getWindowText();
+      const windowLower = windowText.toLowerCase();
 
       if (zoneUpper === 'X' || zoneUpper.includes('MINIMAL')) {
         add('good', 'FEMA identifies this location as Zone X, which is generally outside the mapped high-risk flood area.');
@@ -679,13 +770,13 @@
 
       if (typeof rainfallInches === 'number') {
         if (rainfallInches < 0.1) {
-          add('good', 'No measurable rainfall is expected during the next 12 hours.');
+          add('good', `No measurable rainfall is expected during ${windowLower}.`);
         } else if (rainfallInches < 0.75) {
-          add('watch', `${rainfallInches.toFixed(2)} inches of rain is expected in the next 12 hours, creating some runoff potential.`);
+          add('watch', `${rainfallInches.toFixed(2)} inches of rain is expected during ${windowLower}, creating some runoff potential.`);
         } else if (rainfallInches < 2) {
-          add('high', `${rainfallInches.toFixed(2)} inches of rain is expected in the next 12 hours, increasing flood and drainage risk.`);
+          add('high', `${rainfallInches.toFixed(2)} inches of rain is expected during ${windowLower}, increasing flood and drainage risk.`);
         } else {
-          add('danger', `${rainfallInches.toFixed(2)} inches of rain is expected in the next 12 hours, which may create serious flash-flood potential.`);
+          add('danger', `${rainfallInches.toFixed(2)} inches of rain is expected during ${windowLower}, which may create serious flash-flood potential.`);
         }
       } else if (rainRisk > 10) {
         add('high', 'Rainfall risk is elevated based on the live rainfall backend.');
@@ -727,7 +818,7 @@
       if (surgeScore >= 75) {
         summary = 'Multiple live factors are contributing to very high flood risk. Monitor official guidance and avoid flooded roads.';
       } else if (surgeScore >= 50) {
-        summary = 'Several factors are contributing to elevated flood risk. Conditions should be monitored closely over the next 12 hours.';
+        summary = 'Several factors are contributing to elevated flood risk. Conditions should be monitored closely over the selected risk window.';
       } else if (surgeScore >= 25) {
         summary = 'Some risk factors are present, but current live conditions do not indicate severe flood risk at this address.';
       }
@@ -772,6 +863,9 @@
       document.getElementById('riskLevel').innerText = 'CHECKING';
       document.getElementById('readinessLabel').innerText = '--';
       document.getElementById('futureTrend').innerText = '--';
+      document.getElementById('scoreWindowLabel').innerText = `Window: ${getWindowText()}`;
+      document.getElementById('rainfallMetricLabel').innerText = selectedWindowHours === 0 ? 'Rainfall outlook' : `Rainfall outlook (${getWindowText().toLowerCase()})`;
+      document.getElementById('trendMetricLabel').innerText = getWindowText();
       setRiskVisual(0);
       renderWhyThisScore({ reasons: [{ type: 'watch', text: 'Running live flood-risk analysis...' }], summary: '' });
 
@@ -834,7 +928,7 @@
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ lat, lon })
+            body: JSON.stringify({ lat, lon, hours: selectedWindowHours })
           }
         );
 
@@ -907,7 +1001,8 @@
           alertRisk,
           gaugeRisk,
           tideRisk,
-          drainageRisk
+          drainageRisk,
+          windowText: getWindowText()
         });
 
         renderWhyThisScore(why);
