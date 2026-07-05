@@ -398,6 +398,94 @@
     .component-bar { grid-column: 1 / -1; height: 7px; background: rgba(255,255,255,0.09); border-radius: 999px; overflow: hidden; margin-top: -4px; }
     .component-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--green), var(--yellow), var(--orange)); width: 0%; transition: width 0.35s ease; }
 
+
+    .breakdown-item {
+      border: 1px solid rgba(248,250,252,0.10);
+      background: rgba(255,255,255,0.028);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .breakdown-summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 12px 12px 14px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .breakdown-summary::-webkit-details-marker { display: none; }
+
+    .breakdown-title {
+      color: #d6dce8;
+      font-size: 0.9rem;
+      font-weight: 900;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .breakdown-chevron {
+      color: var(--yellow);
+      display: inline-block;
+      width: 14px;
+      transition: transform 0.18s ease;
+    }
+
+    .breakdown-item[open] .breakdown-chevron { transform: rotate(90deg); }
+
+    .breakdown-subtitle {
+      grid-column: 1 / -1;
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-top: -5px;
+      line-height: 1.35;
+    }
+
+    .breakdown-details {
+      border-top: 1px solid rgba(248,250,252,0.10);
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .detail-box {
+      border: 1px solid rgba(248,250,252,0.10);
+      background: rgba(0,0,0,0.12);
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .detail-label {
+      color: var(--muted);
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    .detail-value {
+      color: var(--white);
+      font-weight: 900;
+      font-size: 0.88rem;
+      overflow-wrap: anywhere;
+    }
+
+    .detail-explanation {
+      color: #d6dce8;
+      line-height: 1.45;
+      font-size: 0.88rem;
+    }
+
     #whyList {
       list-style: none;
       display: grid;
@@ -706,25 +794,155 @@
       return match ? parseFloat(match[1]) : null;
     }
 
-    function renderBreakdown(components) {
-      if (!Array.isArray(components) || !components.length) {
+    function escapeHtml(value) {
+      return safeText(value, '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function getComponentKey(component) {
+      const raw = `${component.key || ''} ${component.name || ''} ${component.label || ''}`.toLowerCase();
+      if (raw.includes('rain')) return 'rainfall';
+      if (raw.includes('nws') || raw.includes('alert')) return 'alerts';
+      if (raw.includes('fema') || raw.includes('flood zone') || raw.includes('floodplain')) return 'fema';
+      if (raw.includes('usgs') || raw.includes('river') || raw.includes('gauge')) return 'river';
+      if (raw.includes('elevation') || raw.includes('ground')) return 'elevation';
+      if (raw.includes('drainage') || raw.includes('urban')) return 'drainage';
+      if (raw.includes('tide') || raw.includes('coastal')) return 'tide';
+      return component.key || 'factor';
+    }
+
+    function enhanceBreakdown(components, context = {}) {
+      if (!Array.isArray(components)) return [];
+
+      return components.map(component => {
+        const key = getComponentKey(component);
+        const base = { ...component, key };
+        const name = base.name || base.label || base.key || 'Risk factor';
+        const score = Math.round(Number(base.score ?? base.value ?? 0));
+        const max = Math.round(Number(base.max ?? base.maxScore ?? 100));
+
+        const enhanced = {
+          ...base,
+          name,
+          score,
+          max,
+          subtitle: base.subtitle || base.summary || '',
+          details: base.details || [],
+          explanation: base.explanation || base.reason || ''
+        };
+
+        if (key === 'rainfall') {
+          enhanced.subtitle = enhanced.subtitle || context.rainfallMessage || 'Forecast rainfall contribution';
+          enhanced.details = enhanced.details.length ? enhanced.details : [
+            ['Forecast total', typeof context.rainfallInches === 'number' ? `${context.rainfallInches.toFixed(2)} in` : 'Unavailable'],
+            ['Peak hourly rain', typeof context.maxHourlyRain === 'number' ? `${context.maxHourlyRain.toFixed(2)} in/hr` : 'Unavailable'],
+            ['Contribution', `+${score} points`]
+          ];
+          enhanced.explanation = enhanced.explanation || 'Rainfall is weighted heavily because intense or prolonged rain can create rapid runoff, street flooding, and flash-flood conditions.';
+        }
+
+        if (key === 'alerts') {
+          enhanced.subtitle = enhanced.subtitle || safeText(context.alertText, 'No active alert details');
+          enhanced.details = enhanced.details.length ? enhanced.details : [
+            ['NWS status', safeText(context.alertText, 'Unavailable')],
+            ['Alert risk', `${context.alertRisk || 0}`],
+            ['Contribution', `+${score} points`]
+          ];
+          enhanced.explanation = enhanced.explanation || 'Official National Weather Service alerts increase the score because they reflect active or expected flood hazards.';
+        }
+
+        if (key === 'fema') {
+          enhanced.subtitle = enhanced.subtitle || `Flood Zone ${safeText(context.femaZone, 'Unknown')}`;
+          enhanced.details = enhanced.details.length ? enhanced.details : [
+            ['FEMA zone', safeText(context.femaZone, 'Unknown')],
+            ['Base flood elevation', safeText(context.baseFloodElevation, 'Not applicable')],
+            ['Contribution', `+${score} points`]
+          ];
+          enhanced.explanation = enhanced.explanation || 'FEMA floodplain data represents mapped flood exposure and helps identify whether the property sits inside a higher-risk flood zone.';
+        }
+
+        if (key === 'river') {
+          enhanced.subtitle = enhanced.subtitle || safeText(context.usgsStation, 'Nearest USGS gauge');
+          enhanced.details = enhanced.details.length ? enhanced.details : [
+            ['Nearest gauge', safeText(context.usgsStation, 'Unavailable')],
+            ['Gauge reading', safeText(context.usgsText, 'Unavailable')],
+            ['Contribution', `+${score} points`]
+          ];
+          enhanced.explanation = enhanced.explanation || 'Nearby river and stream gauges help show whether water levels are already elevated before or during rainfall.';
+        }
+
+        if (key === 'elevation') {
+          enhanced.subtitle = enhanced.subtitle || (typeof context.elevationFeet === 'number' ? `${context.elevationFeet} ft ground elevation` : 'Ground elevation factor');
+          enhanced.details = enhanced.details.length ? enhanced.details : [
+            ['Ground elevation', typeof context.elevationFeet === 'number' ? `${context.elevationFeet} ft` : 'Unavailable'],
+            ['Contribution', `+${score} points`]
+          ];
+          enhanced.explanation = enhanced.explanation || 'Lower elevations can increase exposure to coastal, river, and poor-drainage flooding, especially when combined with heavy rainfall.';
+        }
+
+        if (key === 'drainage') {
+          enhanced.subtitle = enhanced.subtitle || 'Baseline local drainage factor';
+          enhanced.details = enhanced.details.length ? enhanced.details : [
+            ['Drainage model', 'Baseline'],
+            ['Contribution', `+${score} points`]
+          ];
+          enhanced.explanation = enhanced.explanation || 'This placeholder accounts for local drainage sensitivity until more detailed stormwater, impervious-surface, and terrain data are added.';
+        }
+
+        if (key === 'tide') {
+          enhanced.subtitle = enhanced.subtitle || 'Coastal/tidal influence placeholder';
+          enhanced.details = enhanced.details.length ? enhanced.details : [
+            ['Tide data', 'Backend coming soon'],
+            ['Contribution', `+${score} points`]
+          ];
+          enhanced.explanation = enhanced.explanation || 'Tide overlap will matter most in coastal and tidal river areas where high water can slow drainage.';
+        }
+
+        return enhanced;
+      });
+    }
+
+    function renderBreakdown(components, context = {}) {
+      const enhanced = enhanceBreakdown(components, context);
+
+      if (!enhanced.length) {
         document.getElementById('breakdownList').innerHTML = '<div class="breakdown-row"><span class="breakdown-name">Waiting for analysis</span><span class="breakdown-score">--</span><div class="component-bar"><div class="component-fill"></div></div></div>';
         return;
       }
 
-      const html = components.map(c => {
-        const name = c.name || c.label || c.key || 'Risk factor';
-        const score = Number(c.score ?? c.value ?? 0);
-        const max = Number(c.max ?? c.maxScore ?? 100);
-        const pct = max ? Math.round((score / max) * 100) : 0;
+      const html = enhanced.map(c => {
+        const pct = c.max ? Math.round((c.score / c.max) * 100) : 0;
+        const detailRows = Array.isArray(c.details) ? c.details.map(item => {
+          const label = Array.isArray(item) ? item[0] : (item.label || item.name || 'Detail');
+          const value = Array.isArray(item) ? item[1] : (item.value || item.text || '');
+          return `
+            <div class="detail-box">
+              <div class="detail-label">${escapeHtml(label)}</div>
+              <div class="detail-value">${escapeHtml(value)}</div>
+            </div>
+          `;
+        }).join('') : '';
+
         return `
-          <div class="breakdown-row">
-            <span class="breakdown-name">${name}</span>
-            <span class="breakdown-score">${Math.round(score)} / ${Math.round(max)}</span>
-            <div class="component-bar"><div class="component-fill" style="width:${pct}%"></div></div>
-          </div>
+          <details class="breakdown-item">
+            <summary class="breakdown-summary">
+              <span class="breakdown-title"><span class="breakdown-chevron">▶</span>${escapeHtml(c.name)}</span>
+              <span class="breakdown-score">${c.score} / ${c.max}</span>
+              <span class="breakdown-subtitle">${escapeHtml(c.subtitle)}</span>
+              <div class="component-bar"><div class="component-fill" style="width:${pct}%"></div></div>
+            </summary>
+            <div class="breakdown-details">
+              <div class="detail-grid">${detailRows}</div>
+              <div class="detail-explanation">${escapeHtml(c.explanation)}</div>
+            </div>
+          </details>
         `;
       }).join('');
+
       document.getElementById('breakdownList').innerHTML = html;
     }
 
@@ -909,7 +1127,18 @@
         document.getElementById('readinessLabel').innerText = readinessScore + ' / 100';
         document.getElementById('futureTrend').innerText = result.trend || (surgeScore >= 50 ? 'Risk rising' : 'Stable for now');
         setRiskVisual(surgeScore);
-        renderBreakdown(breakdown);
+        renderBreakdown(breakdown, {
+          rainfallMessage,
+          rainfallInches,
+          maxHourlyRain,
+          alertRisk,
+          alertText: nwsData.alertText,
+          femaZone: rawFemaZone,
+          baseFloodElevation: femaData.bfe,
+          elevationFeet: feet,
+          usgsText: usgsData.gauge,
+          usgsStation: usgsData.station
+        });
         renderWhyThisScore(result.assessment || result);
 
         document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
