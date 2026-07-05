@@ -742,29 +742,59 @@
 
     function calculateFemaComponent(zone) {
       const zoneUpper = normalizeFemaZone(zone).toUpperCase();
-      if (zoneUpper === 'X' || zoneUpper.includes('MINIMAL')) return 0;
+      if (zoneUpper === 'X' || zoneUpper.includes('MINIMAL')) return 1;
       if (zoneUpper.includes('VE') || zoneUpper === 'V') return 15;
       if (['AE', 'A', 'AO', 'AH'].some(z => zoneUpper.includes(z))) return 13;
+      if (zoneUpper.includes('D')) return 8;
       if (zoneUpper === 'UNKNOWN') return 6;
       return 5;
     }
 
+    function calculateNwsComponent(alertRisk, alertText) {
+      const text = safeText(alertText, '').toLowerCase();
+      if (text.includes('flash flood warning') || text.includes('flood warning')) return 20;
+      if (text.includes('flash flood watch') || text.includes('flood watch')) return 14;
+      if (text.includes('advisory')) return 8;
+      return scaleToWeight(alertRisk, 40, WEIGHTS.nws);
+    }
+
     function calculateElevationComponent(feet) {
       if (typeof feet !== 'number' || Number.isNaN(feet)) return 5;
-      if (feet < 20) return 10;
-      if (feet < 100) return 7;
-      if (feet < 500) return 4;
+      if (feet < 10) return 10;
+      if (feet < 30) return 8;
+      if (feet < 100) return 6;
+      if (feet < 500) return 3;
+      return 1;
+    }
+
+    function calculateUsgsComponent(usgsText) {
+      const text = safeText(usgsText, '').toLowerCase();
+      if (!text || text.includes('unavailable') || text.includes('coming')) return 7;
+      const stageMatch = text.match(/([0-9]+(?:\.[0-9]+)?)\s*ft/);
+      if (!stageMatch) return 4;
+      const stage = Number(stageMatch[1]);
+      if (stage >= 12) return 15;
+      if (stage >= 8) return 11;
+      if (stage >= 4) return 7;
       return 2;
     }
 
-    function calculateComponents({ rainRisk, rainfallInches, maxHourlyRain, alertRisk, femaZone, elevationFeet }) {
+    function calculateDrainageComponent(rainfallInches, maxHourlyRain, elevationFeet) {
+      let score = 2;
+      if (typeof rainfallInches === 'number' && rainfallInches >= 0.75) score += 1;
+      if (typeof maxHourlyRain === 'number' && maxHourlyRain >= 0.5) score += 1;
+      if (typeof elevationFeet === 'number' && elevationFeet < 100) score += 1;
+      return clampScore(score, WEIGHTS.drainage);
+    }
+
+    function calculateComponents({ rainRisk, rainfallInches, maxHourlyRain, alertRisk, alertText, femaZone, elevationFeet, usgsText }) {
       return [
         { key: 'rainfall', name: 'Forecast Rainfall', score: calculateRainfallComponent(rainRisk, rainfallInches, maxHourlyRain), max: WEIGHTS.rainfall },
-        { key: 'nws', name: 'NWS Flood Alerts', score: scaleToWeight(alertRisk, 40, WEIGHTS.nws), max: WEIGHTS.nws },
+        { key: 'nws', name: 'NWS Flood Alerts', score: calculateNwsComponent(alertRisk, alertText), max: WEIGHTS.nws },
         { key: 'fema', name: 'FEMA Flood Zone', score: calculateFemaComponent(femaZone), max: WEIGHTS.fema },
-        { key: 'usgs', name: 'USGS River Conditions', score: 5, max: WEIGHTS.usgs },
+        { key: 'usgs', name: 'USGS River Conditions', score: calculateUsgsComponent(usgsText), max: WEIGHTS.usgs },
         { key: 'elevation', name: 'Ground Elevation', score: calculateElevationComponent(elevationFeet), max: WEIGHTS.elevation },
-        { key: 'drainage', name: 'Local Drainage / Urbanization', score: 3, max: WEIGHTS.drainage },
+        { key: 'drainage', name: 'Local Drainage / Urbanization', score: calculateDrainageComponent(rainfallInches, maxHourlyRain, elevationFeet), max: WEIGHTS.drainage },
         { key: 'tide', name: 'Tide / Coastal Influence', score: 0, max: WEIGHTS.tide }
       ];
     }
@@ -972,8 +1002,10 @@
           rainfallInches,
           maxHourlyRain,
           alertRisk,
+          alertText: nwsData.alertText,
           femaZone: rawFemaZone,
-          elevationFeet: feet
+          elevationFeet: feet,
+          usgsText: usgsData.gauge
         });
 
         const surgeScore = Math.min(100, components.reduce((sum, c) => sum + c.score, 0));
