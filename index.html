@@ -486,6 +486,126 @@
       font-size: 0.88rem;
     }
 
+
+    .loading-panel, .timing-card, .confidence-card {
+      margin-top: 18px;
+      border: 1px solid rgba(255,246,0,0.22);
+      background: rgba(255,246,0,0.045);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .loading-panel { display: none; }
+    .loading-panel.active { display: block; }
+
+    .loading-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--yellow);
+      font-weight: 950;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+      margin-bottom: 8px;
+    }
+
+    .spinner {
+      width: 15px;
+      height: 15px;
+      border: 2px solid rgba(255,246,0,0.25);
+      border-top-color: var(--yellow);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-note {
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.45;
+      margin-bottom: 10px;
+    }
+
+    .progress-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 7px 12px;
+      color: #d6dce8;
+      font-size: 0.82rem;
+    }
+
+    .progress-list span::before {
+      content: "✓";
+      color: var(--yellow);
+      font-weight: 950;
+      margin-right: 7px;
+    }
+
+    .timing-title, .confidence-title {
+      color: var(--yellow);
+      font-size: 1.02rem;
+      font-weight: 950;
+      margin-bottom: 10px;
+    }
+
+    .timing-main {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .timing-label {
+      color: var(--muted);
+      font-size: 0.76rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 900;
+    }
+
+    .timing-value {
+      color: var(--white);
+      font-weight: 950;
+      font-size: 1.02rem;
+    }
+
+    .timing-badge {
+      border: 1px solid var(--yellow);
+      color: var(--yellow);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 0.72rem;
+      font-weight: 950;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .timing-reasons, .confidence-list {
+      color: #d6dce8;
+      line-height: 1.45;
+      font-size: 0.88rem;
+      display: grid;
+      gap: 6px;
+    }
+
+    .confidence-stars {
+      color: var(--yellow);
+      font-size: 1.05rem;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .confidence-missing {
+      color: var(--muted);
+      font-size: 0.84rem;
+      margin-top: 10px;
+      line-height: 1.45;
+    }
+
+
     #whyList {
       list-style: none;
       display: grid;
@@ -604,7 +724,7 @@
 
         <div class="actions">
           <input type="text" id="addressInput" placeholder="Enter an address or ZIP code" />
-          <button class="button" onclick="runSurgeWatch()">Check Flood Risk</button>
+          <button class="button" id="checkButton" onclick="runSurgeWatch()">Check Flood Risk</button>
           <a class="button secondary" href="#features">▱ View Concept</a>
         </div>
 
@@ -674,6 +794,21 @@
           </div>
         </div>
 
+        <div class="loading-panel" id="loadingPanel">
+          <div class="loading-head"><span class="spinner"></span><span>Analyzing flood risk...</span></div>
+          <div class="loading-note">This may take 5–10 seconds while SurgeWatch retrieves live weather, FEMA, USGS, elevation, and tide data.</div>
+          <div class="progress-list">
+            <span>Finding address</span>
+            <span>Checking elevation</span>
+            <span>Reading NWS alerts</span>
+            <span>Retrieving rainfall forecast</span>
+            <span>Checking FEMA flood data</span>
+            <span>Checking river gauges</span>
+            <span>Checking tide influence</span>
+            <span>Calculating score</span>
+          </div>
+        </div>
+
         <div class="metrics">
           <div class="metric"><span class="metric-icon">⌖</span><span>Address monitored</span><b id="addressLabel">Enter an address</b></div>
           <div class="metric"><span class="metric-icon">◎</span><span>Coordinates</span><b id="coordsLabel">--</b></div>
@@ -687,6 +822,29 @@
           <div class="metric"><span class="metric-icon">◷</span><span id="trendMetricLabel">Next 24 hours</span><b id="futureTrend">--</b></div>
           <div class="metric"><span class="metric-icon">≋</span><span>Nearest USGS gauge</span><b class="linkish" id="gaugeDistance">Coming soon</b></div>
           <div class="metric"><span class="metric-icon">☁</span><span>Notification mode</span><b class="ready">Ready</b></div>
+        </div>
+
+        <div class="timing-card" id="timingCard">
+          <div class="timing-title">Flood Timing Forecast</div>
+          <div class="timing-main">
+            <div>
+              <div class="timing-label">Highest risk window</div>
+              <div class="timing-value" id="timingWindow">Waiting for analysis</div>
+            </div>
+            <div class="timing-badge" id="timingConfidence">Pending</div>
+          </div>
+          <div class="timing-reasons" id="timingReasons">
+            <span>Enter an address to estimate when flood conditions may be most concerning.</span>
+          </div>
+        </div>
+
+        <div class="confidence-card" id="confidenceCard">
+          <div class="confidence-title">Analysis Confidence</div>
+          <div class="confidence-stars" id="confidenceStars">☆☆☆☆☆</div>
+          <div class="confidence-list" id="confidenceList">
+            <span>Waiting for live data sources.</span>
+          </div>
+          <div class="confidence-missing" id="confidenceMissing"></div>
         </div>
 
         <div class="score-breakdown">
@@ -975,6 +1133,79 @@
       document.getElementById('whySummary').innerText = summary && summary !== text ? summary : '';
     }
 
+
+    function setLoadingState(isLoading) {
+      const panel = document.getElementById('loadingPanel');
+      const button = document.getElementById('checkButton');
+      if (panel) panel.classList.toggle('active', !!isLoading);
+      if (button) {
+        button.disabled = !!isLoading;
+        button.innerText = isLoading ? 'Analyzing...' : 'Check Flood Risk';
+        button.style.opacity = isLoading ? '0.78' : '1';
+        button.style.cursor = isLoading ? 'wait' : 'pointer';
+      }
+    }
+
+    function renderTimingForecast(context = {}) {
+      const rainfall = typeof context.rainfallInches === 'number' ? context.rainfallInches : 0;
+      const maxHourly = typeof context.maxHourlyRain === 'number' ? context.maxHourlyRain : 0;
+      const alertText = safeText(context.alertText, '').toLowerCase();
+      const tideRisk = Number(context.tideRisk || 0);
+      const tideStatus = safeText(context.tideStatus, 'No tide data');
+      const nextHighTide = safeText(context.nextHighTide, 'Unavailable');
+
+      let windowText = 'Next 24 hours';
+      let confidence = 'Medium';
+      const reasons = [];
+
+      if (rainfall >= 1.25 || maxHourly >= 0.5) {
+        windowText = selectedWindowHours === 1 ? 'Now' : `Next ${selectedWindowHours} hours`;
+        reasons.push('Heavier rainfall is expected during the selected risk window.');
+      } else if (rainfall > 0) {
+        reasons.push('Some rainfall is expected, but current forecast totals are limited.');
+      } else {
+        reasons.push('No major rainfall timing signal is currently detected.');
+      }
+
+      if (alertText.includes('flood')) {
+        reasons.push('A National Weather Service flood alert is active or recently detected.');
+        confidence = 'High';
+      }
+
+      if (tideRisk > 0) {
+        reasons.push(`Tide influence may slow drainage. Next high tide: ${nextHighTide}.`);
+        if (rainfall >= 0.5 || alertText.includes('flood')) windowText = 'Rain + tide overlap window';
+      } else if (tideStatus && tideStatus !== 'Unavailable') {
+        reasons.push(tideStatus);
+      }
+
+      if (context.usgsText && !safeText(context.usgsText, '').toLowerCase().includes('unavailable')) {
+        reasons.push('Nearest USGS gauge data is included in the timing assessment.');
+      }
+
+      if (!reasons.length) reasons.push('Timing forecast will improve as rainfall, tide, and gauge details expand.');
+
+      document.getElementById('timingWindow').innerText = windowText;
+      document.getElementById('timingConfidence').innerText = confidence;
+      document.getElementById('timingReasons').innerHTML = reasons.map(r => `<span>• ${escapeHtml(r)}</span>`).join('');
+    }
+
+    function renderConfidence(context = {}) {
+      const sources = [
+        ['Live rainfall forecast', typeof context.rainfallInches === 'number' || !!context.rainfallMessage],
+        ['FEMA flood zone', !!context.femaZone && context.femaZone !== 'Unavailable'],
+        ['USGS river gauge', !!context.usgsText && context.usgsText !== 'Unavailable'],
+        ['NWS alerts', !!context.alertText && context.alertText !== 'Unavailable'],
+        ['Tide layer', !!context.tideStatus && !String(context.tideStatus).toLowerCase().includes('unavailable')]
+      ];
+
+      const available = sources.filter(s => s[1]);
+      const stars = Math.max(1, Math.min(5, available.length));
+      document.getElementById('confidenceStars').innerText = '★★★★★'.slice(0, stars) + '☆☆☆☆☆'.slice(0, 5 - stars);
+      document.getElementById('confidenceList').innerHTML = sources.map(([label, ok]) => `<span>${ok ? '✓' : '□'} ${escapeHtml(label)}</span>`).join('');
+      document.getElementById('confidenceMissing').innerText = 'Future confidence upgrades: detailed drainage model, soil saturation, storm sewer capacity, slope, and watershed flow.';
+    }
+
     async function runSurgeWatch() {
       const input = document.getElementById('addressInput').value.trim();
       if (!input) {
@@ -982,6 +1213,7 @@
         return;
       }
 
+      setLoadingState(true);
       document.getElementById('addressLabel').innerText = input;
       document.getElementById('coordsLabel').innerText = 'Looking up location...';
       document.getElementById('elevationLabel').innerText = 'Checking elevation...';
@@ -1000,6 +1232,12 @@
       setRiskVisual(0);
       renderBreakdown([]);
       renderWhyThisScore({ reasons: [{ type: 'watch', text: 'Running live flood-risk analysis...' }], summary: '' });
+      document.getElementById('timingWindow').innerText = 'Analyzing...';
+      document.getElementById('timingConfidence').innerText = 'Pending';
+      document.getElementById('timingReasons').innerHTML = '<span>Gathering live data to estimate the highest risk window.</span>';
+      document.getElementById('confidenceStars').innerText = '☆☆☆☆☆';
+      document.getElementById('confidenceList').innerHTML = '<span>Checking live data sources...</span>';
+      document.getElementById('confidenceMissing').innerText = '';
 
       try {
         const isZip = /^\d{5}$/.test(input);
@@ -1160,7 +1398,7 @@
         document.getElementById('readinessLabel').innerText = readinessScore + ' / 100';
         document.getElementById('futureTrend').innerText = result.trend || (surgeScore >= 50 ? 'Risk rising' : 'Stable for now');
         setRiskVisual(surgeScore);
-        renderBreakdown(breakdown, {
+        const analysisContext = {
           rainfallMessage,
           rainfallInches,
           maxHourlyRain,
@@ -1175,8 +1413,12 @@
           tideStatus: tideData.tideStatus,
           nextHighTide: tideData.nextHighTide,
           tideExplanation: tideData.explanation
-        });
+        };
+        renderBreakdown(breakdown, analysisContext);
+        renderTimingForecast(analysisContext);
+        renderConfidence(analysisContext);
         renderWhyThisScore(result.assessment || result);
+        setLoadingState(false);
 
         document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
       } catch (error) {
@@ -1192,6 +1434,7 @@
           reasons: [{ type: 'danger', text: 'SurgeWatch could not complete the live analysis for this location.' }],
           summary: 'Please check the address and try again. If the address is valid, one of the live data services may be temporarily unavailable.'
         });
+        setLoadingState(false);
         console.error(error);
       }
     }
