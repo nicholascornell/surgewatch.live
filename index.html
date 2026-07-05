@@ -656,254 +656,37 @@
     </footer>
   </main>
 
+  <script src="riskEngine.js"></script>
+
   <script>
     let selectedWindowHours = 24;
 
-    const WEIGHTS = {
-      rainfall: 30,
-      nws: 20,
-      fema: 15,
-      usgs: 15,
-      elevation: 10,
-      drainage: 5,
-      tide: 5
-    };
-
-    function getWindowText(hours = selectedWindowHours) {
-      if (Number(hours) === 1) return 'Now';
-      return `Next ${hours} hours`;
-    }
-
-    function setRiskWindow(hours) {
-      selectedWindowHours = Number(hours);
-      document.querySelectorAll('.window-btn').forEach(btn => {
-        btn.classList.toggle('active', Number(btn.dataset.hours) === selectedWindowHours);
-      });
-
-      const windowText = getWindowText();
-      document.getElementById('scoreWindowLabel').innerText = `Window: ${windowText}`;
-      document.getElementById('rainfallMetricLabel').innerText = selectedWindowHours === 1 ? 'Rainfall outlook' : `Rainfall outlook (${windowText.toLowerCase()})`;
-      document.getElementById('trendMetricLabel').innerText = windowText;
-
-      const currentAddress = document.getElementById('addressInput').value.trim();
-      const hasScore = document.getElementById('scoreNumber').innerText !== '--';
-      if (currentAddress && hasScore) runSurgeWatch();
-    }
-
-    function safeText(value, fallback = 'Unavailable') {
-      if (value === null || value === undefined || value === '') return fallback;
-      return String(value);
-    }
-
-    function setRiskVisual(score) {
-      const cleanScore = Number.isFinite(score) ? Math.max(1, Math.min(100, Math.round(score))) : 0;
-      document.getElementById('riskScale').style.setProperty('--score-pos', cleanScore);
-      document.getElementById('riskBubble').innerText = cleanScore || '--';
-    }
-
-    function getRiskLevel(score) {
-      if (score >= 75) return 'VERY HIGH';
-      if (score >= 50) return 'HIGH';
-      if (score >= 25) return 'MODERATE';
-      return 'LOW';
-    }
-
-    function parseInchesFromMessage(message) {
-      if (!message) return null;
-      const match = String(message).match(/([0-9]+(?:\.[0-9]+)?)\s*inches?/i);
-      return match ? parseFloat(match[1]) : null;
-    }
-
-    function normalizeFemaZone(zone) {
-      const z = safeText(zone, '').trim();
-      if (!z || z.toLowerCase().includes('unavailable') || z.toLowerCase().includes('coming')) return 'Unknown';
-      return z;
-    }
-
-    function clampScore(value, max) {
-      return Math.max(0, Math.min(max, Math.round(Number(value) || 0)));
-    }
-
-    function scaleToWeight(rawValue, rawMax, weightedMax) {
-      return clampScore((Number(rawValue || 0) / rawMax) * weightedMax, weightedMax);
-    }
-
-    function calculateRainfallComponent(rainRisk, rainfallInches, maxHourlyRain) {
-      if (typeof rainfallInches === 'number') {
-        if (rainfallInches >= 4 || maxHourlyRain >= 1.5) return 30;
-        if (rainfallInches >= 2.5 || maxHourlyRain >= 1) return 25;
-        if (rainfallInches >= 1.25 || maxHourlyRain >= 0.5) return 18;
-        if (rainfallInches >= 0.5 || maxHourlyRain >= 0.25) return 10;
-        if (rainfallInches > 0) return 5;
-        return 0;
-      }
-      return scaleToWeight(rainRisk, 40, WEIGHTS.rainfall);
-    }
-
-    function calculateFemaComponent(zone) {
-      const zoneUpper = normalizeFemaZone(zone).toUpperCase();
-      if (zoneUpper === 'X' || zoneUpper.includes('MINIMAL')) return 1;
-      if (zoneUpper.includes('VE') || zoneUpper === 'V') return 15;
-      if (['AE', 'A', 'AO', 'AH'].some(z => zoneUpper.includes(z))) return 13;
-      if (zoneUpper.includes('D')) return 8;
-      if (zoneUpper === 'UNKNOWN') return 6;
-      return 5;
-    }
-
-    function calculateNwsComponent(alertRisk, alertText) {
-      const text = safeText(alertText, '').toLowerCase();
-      if (text.includes('flash flood warning') || text.includes('flood warning')) return 20;
-      if (text.includes('flash flood watch') || text.includes('flood watch')) return 14;
-      if (text.includes('advisory')) return 8;
-      return scaleToWeight(alertRisk, 40, WEIGHTS.nws);
-    }
-
-    function calculateElevationComponent(feet) {
-      if (typeof feet !== 'number' || Number.isNaN(feet)) return 5;
-      if (feet < 10) return 10;
-      if (feet < 30) return 8;
-      if (feet < 100) return 6;
-      if (feet < 500) return 3;
-      return 1;
-    }
-
-    function calculateUsgsComponent(usgsText) {
-      const text = safeText(usgsText, '').toLowerCase();
-      if (!text || text.includes('unavailable') || text.includes('coming')) return 7;
-      const stageMatch = text.match(/([0-9]+(?:\.[0-9]+)?)\s*ft/);
-      if (!stageMatch) return 4;
-      const stage = Number(stageMatch[1]);
-      if (stage >= 12) return 15;
-      if (stage >= 8) return 11;
-      if (stage >= 4) return 7;
-      return 2;
-    }
-
-    function calculateDrainageComponent(rainfallInches, maxHourlyRain, elevationFeet) {
-      let score = 2;
-      if (typeof rainfallInches === 'number' && rainfallInches >= 0.75) score += 1;
-      if (typeof maxHourlyRain === 'number' && maxHourlyRain >= 0.5) score += 1;
-      if (typeof elevationFeet === 'number' && elevationFeet < 100) score += 1;
-      return clampScore(score, WEIGHTS.drainage);
-    }
-
-    function calculateComponents({ rainRisk, rainfallInches, maxHourlyRain, alertRisk, alertText, femaZone, elevationFeet, usgsText }) {
-      return [
-        { key: 'rainfall', name: 'Forecast Rainfall', score: calculateRainfallComponent(rainRisk, rainfallInches, maxHourlyRain), max: WEIGHTS.rainfall },
-        { key: 'nws', name: 'NWS Flood Alerts', score: calculateNwsComponent(alertRisk, alertText), max: WEIGHTS.nws },
-        { key: 'fema', name: 'FEMA Flood Zone', score: calculateFemaComponent(femaZone), max: WEIGHTS.fema },
-        { key: 'usgs', name: 'USGS River Conditions', score: calculateUsgsComponent(usgsText), max: WEIGHTS.usgs },
-        { key: 'elevation', name: 'Ground Elevation', score: calculateElevationComponent(elevationFeet), max: WEIGHTS.elevation },
-        { key: 'drainage', name: 'Local Drainage / Urbanization', score: calculateDrainageComponent(rainfallInches, maxHourlyRain, elevationFeet), max: WEIGHTS.drainage },
-        { key: 'tide', name: 'Tide / Coastal Influence', score: 0, max: WEIGHTS.tide }
-      ];
-    }
-
-    function renderBreakdown(components) {
-      const html = components.map(c => {
-        const pct = c.max ? Math.round((c.score / c.max) * 100) : 0;
-        return `
-          <div class="breakdown-row">
-            <span class="breakdown-name">${c.name}</span>
-            <span class="breakdown-score">${c.score} / ${c.max}</span>
-            <div class="component-bar"><div class="component-fill" style="width:${pct}%"></div></div>
-          </div>
-        `;
-      }).join('');
-      document.getElementById('breakdownList').innerHTML = html;
-    }
-
-    function generateWhyThisScore(data) {
-      const reasons = [];
-      const add = (type, text) => reasons.push({ type, text });
-
-      const zone = normalizeFemaZone(data.femaZone);
-      const zoneUpper = zone.toUpperCase();
-      const rainfallInches = data.rainfallInches;
-      const maxHourlyRain = data.maxHourlyRain;
-      const feet = data.elevationFeet;
-      const alertRisk = data.alertRisk || 0;
-      const gaugeRisk = data.gaugeRisk || 0;
-      const tideRisk = data.tideRisk || 0;
-      const drainageRisk = data.drainageRisk || 0;
-      const surgeScore = data.surgeScore || 0;
-      const windowText = data.windowText || getWindowText();
-      const windowLower = windowText.toLowerCase();
-
-      if (typeof rainfallInches === 'number') {
-        if (rainfallInches < 0.1) {
-          add('good', `No measurable rainfall is expected during ${windowLower}.`);
-        } else if (rainfallInches < 0.75) {
-          add('watch', `${rainfallInches.toFixed(2)} inches of rain is expected during ${windowLower}, creating some runoff potential.`);
-        } else if (rainfallInches < 2) {
-          add('high', `${rainfallInches.toFixed(2)} inches of rain is expected during ${windowLower}, increasing flood and drainage risk.`);
-        } else {
-          add('danger', `${rainfallInches.toFixed(2)} inches of rain is expected during ${windowLower}, which may create serious flash-flood potential.`);
-        }
-      } else {
-        add('watch', 'Rainfall forecast data was limited, so the score uses the available rainfall backend estimate.');
-      }
-
-      if (typeof maxHourlyRain === 'number' && maxHourlyRain >= 0.5) {
-        add('high', `Peak hourly rainfall may reach ${maxHourlyRain.toFixed(2)} inches/hour, which can overwhelm drainage even when total rainfall is lower.`);
-      }
-
-      if (alertRisk > 0) {
-        add('danger', 'An official National Weather Service flood alert is active for this area.');
-      } else {
-        add('good', 'No active National Weather Service flood alerts currently affect this location.');
-      }
-
-      if (zoneUpper === 'X' || zoneUpper.includes('MINIMAL')) {
-        add('good', 'FEMA identifies this location as Zone X, which is generally outside the mapped high-risk flood area.');
-      } else if (['AE', 'A', 'VE', 'V', 'AO', 'AH'].some(z => zoneUpper.includes(z))) {
-        add('high', `FEMA flood mapping shows this property in Flood Zone ${zone}, which increases mapped flood exposure.`);
-      } else if (zone !== 'Unknown') {
-        add('watch', `FEMA flood zone returned as ${zone}. This is included in the risk calculation.`);
-      } else {
-        add('watch', 'FEMA flood-zone data was not available, so mapped floodplain exposure could not be fully evaluated.');
-      }
-
-      if (typeof feet === 'number') {
-        if (feet < 20) {
-          add('high', `Ground elevation is approximately ${feet} ft, which can increase exposure in low-lying coastal or river-adjacent areas.`);
-        } else if (feet < 100) {
-          add('watch', `Ground elevation is approximately ${feet} ft, so local drainage and nearby waterways still matter.`);
-        } else {
-          add('good', `Ground elevation is approximately ${feet} ft, reducing some elevation-based flood exposure.`);
-        }
-      }
-
-      if (gaugeRisk > 10) {
-        add('high', 'Nearby river gauge conditions appear elevated and should be monitored.');
-      } else {
-        add('good', 'Nearest USGS gauge data is connected and is included in the site assessment.');
-      }
-
-      if (tideRisk > 0) add('watch', 'High tide overlap may reduce drainage capacity near tidal areas.');
-      if (drainageRisk > 0) add('watch', 'Local drainage is included as a baseline site factor until detailed stormwater infrastructure data is added.');
-
-      let summary = `Current conditions indicate low flood risk over ${windowLower}, but flood risk can change quickly if rainfall, river gauges, or official alerts change.`;
-      if (surgeScore >= 75) {
-        summary = `Multiple live factors are contributing to very high flood risk over ${windowLower}. Monitor official guidance and avoid flooded roads.`;
-      } else if (surgeScore >= 50) {
-        summary = `Several factors are contributing to high flood risk over ${windowLower}. Conditions should be monitored closely.`;
-      } else if (surgeScore >= 25) {
-        summary = `Some risk factors are present over ${windowLower}, but current live conditions do not indicate severe flood risk at this address.`;
-      }
-
-      return { reasons, summary };
-    }
-
     function renderWhyThisScore(result) {
-      const iconByType = { good: '✓', watch: '•', high: '!', danger: '⚠' };
-      const html = result.reasons.map(reason => {
-        const type = reason.type || 'watch';
-        return `<li class="why-${type}"><span class="why-icon">${iconByType[type] || '•'}</span><span>${reason.text}</span></li>`;
-      }).join('');
+      if (typeof result === 'string') {
+        document.getElementById('whyList').innerHTML = `<li class="why-watch"><span class="why-icon">•</span><span>${result}</span></li>`;
+        document.getElementById('whySummary').innerText = '';
+        return;
+      }
 
-      document.getElementById('whyList').innerHTML = html || '<li class="why-watch"><span class="why-icon">•</span><span>Analysis unavailable.</span></li>';
-      document.getElementById('whySummary').innerText = result.summary || '';
+      const assessment = result?.assessment || result || {};
+      const reasons = assessment.reasons || result?.reasons || [];
+      const summary = assessment.summary || result?.summary || '';
+
+      if (Array.isArray(reasons) && reasons.length) {
+        const iconByType = { good: '✓', watch: '•', high: '!', danger: '⚠' };
+        const html = reasons.map(reason => {
+          const type = reason.type || 'watch';
+          return `<li class="why-${type}"><span class="why-icon">${iconByType[type] || '•'}</span><span>${reason.text || reason}</span></li>`;
+        }).join('');
+
+        document.getElementById('whyList').innerHTML = html;
+        document.getElementById('whySummary').innerText = summary;
+        return;
+      }
+
+      const text = assessment.text || assessment.message || summary || 'Analysis unavailable.';
+      document.getElementById('whyList').innerHTML = `<li class="why-watch"><span class="why-icon">•</span><span>${text}</span></li>`;
+      document.getElementById('whySummary').innerText = summary && summary !== text ? summary : '';
     }
 
     async function runSurgeWatch() {
@@ -997,44 +780,58 @@
 
         document.getElementById('tideOverlap').innerText = 'Backend coming soon';
 
-        const components = calculateComponents({
+        const result = calculateFloodRisk({
           rainRisk,
           rainfallInches,
           maxHourlyRain,
+          rainfallMessage,
           alertRisk,
           alertText: nwsData.alertText,
           femaZone: rawFemaZone,
+          baseFloodElevation: femaData.bfe,
           elevationFeet: feet,
-          usgsText: usgsData.gauge
+          usgsText: usgsData.gauge,
+          usgsStation: usgsData.station,
+          windowHours: selectedWindowHours,
+          windowText: getWindowText(),
+
+          rainfall: {
+            risk: rainRisk,
+            totalInches: rainfallInches,
+            maxHourlyRain,
+            message: rainfallMessage
+          },
+          alerts: {
+            risk: alertRisk,
+            text: nwsData.alertText
+          },
+          floodplain: {
+            zone: rawFemaZone,
+            bfe: femaData.bfe
+          },
+          river: {
+            gauge: usgsData.gauge,
+            station: usgsData.station
+          },
+          elevation: {
+            feet
+          },
+          drainage: {},
+          tide: {}
         });
 
-        const surgeScore = Math.min(100, components.reduce((sum, c) => sum + c.score, 0));
-        const readinessScore = Math.max(0, 100 - surgeScore);
-        const gaugeRisk = components.find(c => c.key === 'usgs')?.score || 0;
-        const tideRisk = components.find(c => c.key === 'tide')?.score || 0;
-        const drainageRisk = components.find(c => c.key === 'drainage')?.score || 0;
+        const surgeScore = Math.max(1, Math.min(100, Math.round(Number(result.totalScore ?? result.score ?? 1))));
+        const readinessScore = Math.max(0, Math.round(Number(result.readinessScore ?? (100 - surgeScore))));
+        const riskLevel = result.level || getRiskLevel(surgeScore);
+        const breakdown = result.breakdown || result.components || [];
 
         document.getElementById('scoreNumber').innerText = surgeScore;
-        document.getElementById('riskLevel').innerText = getRiskLevel(surgeScore);
+        document.getElementById('riskLevel').innerText = riskLevel;
         document.getElementById('readinessLabel').innerText = readinessScore + ' / 100';
-        document.getElementById('futureTrend').innerText = surgeScore >= 50 ? 'Risk rising' : 'Stable for now';
+        document.getElementById('futureTrend').innerText = result.trend || (surgeScore >= 50 ? 'Risk rising' : 'Stable for now');
         setRiskVisual(surgeScore);
-        renderBreakdown(components);
-
-        const why = generateWhyThisScore({
-          surgeScore,
-          elevationFeet: feet,
-          femaZone: rawFemaZone,
-          rainfallInches,
-          maxHourlyRain,
-          rainRisk,
-          alertRisk,
-          gaugeRisk,
-          tideRisk,
-          drainageRisk,
-          windowText: getWindowText()
-        });
-        renderWhyThisScore(why);
+        renderBreakdown(breakdown);
+        renderWhyThisScore(result.assessment || result);
 
         document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
       } catch (error) {
