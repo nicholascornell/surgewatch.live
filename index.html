@@ -257,6 +257,24 @@
       font-weight: 900;
     }
 
+    #whyList li.good::before { content: "✓"; color: var(--green); }
+    #whyList li.watch::before { content: "•"; color: var(--yellow); }
+    #whyList li.warn::before { content: "!"; color: var(--orange); }
+    #whyList li.danger::before { content: "!"; color: var(--red); }
+
+    .assessment-tag {
+      display: inline-block;
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 246, 0, 0.45);
+      color: var(--yellow);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 900;
+    }
+
     #whySummary {
       margin-top: 16px;
       color: var(--white);
@@ -384,6 +402,7 @@
 
         <div class="why-box">
           <h3>Why this score?</h3>
+          <span class="assessment-tag">Live engineering assessment</span>
           <ul id="whyList">
             <li>Enter an address to generate a live explanation.</li>
           </ul>
@@ -403,7 +422,7 @@
 
         <div class="feature">
           <h3>Custom Rain Readiness Score™</h3>
-          <p>A coded risk engine combines rainfall, gauge trends, flood alerts, drainage context, and site conditions into one simple score.</p>
+          <p>A coded risk engine combines rainfall, gauge trends, flood alerts, FEMA mapping, elevation, and prototype engineering factors into one simple score.</p>
         </div>
 
         <div class="feature">
@@ -521,28 +540,44 @@
     }
 
     function calculateElevationRisk(feet) {
-      if (feet < 20) return 35;
-      if (feet < 100) return 25;
-      if (feet < 500) return 12;
-      return 5;
+      // Prototype elevation factor. This is broad context only; drainage and local terrain matter a lot.
+      if (feet < 20) return 30;
+      if (feet < 100) return 20;
+      if (feet < 500) return 8;
+      return 3;
     }
 
     function calculateFemaRisk(femaData) {
-      const zone = String(femaData?.zone || "").toUpperCase();
+      const zone = String(femaData?.zone || "").toUpperCase().trim();
       if (!zone || zone.includes("UNAVAILABLE") || zone.includes("COMING")) return 0;
-      if (zone.includes("VE") || zone.includes("V")) return 25;
+      if (zone.includes("VE") || zone === "V") return 25;
       if (zone.includes("AE") || zone === "A" || zone.includes("AO") || zone.includes("AH")) return 20;
-      if (zone.includes("SHADED X") || zone.includes("0.2")) return 8;
-      if (zone === "X" || zone.includes("ZONE X")) return 2;
-      return 5;
+      if (zone.includes("SHADED X") || zone.includes("0.2")) return 7;
+      if (zone === "X" || zone.includes("ZONE X")) return 1;
+      return 4;
     }
 
     function calculateGaugeRisk(usgsData) {
       const gaugeText = String(usgsData?.gauge || "").toLowerCase();
-      if (gaugeText.includes("flood") || gaugeText.includes("high") || gaugeText.includes("elevated")) return 20;
-      if (gaugeText.includes("rising") || gaugeText.includes("watch")) return 12;
-      if (gaugeText.includes("normal") || gaugeText.includes("stable")) return 3;
-      return 8;
+      if (!gaugeText || gaugeText.includes("unavailable")) return 0;
+      if (gaugeText.includes("flood") || gaugeText.includes("major") || gaugeText.includes("high")) return 20;
+      if (gaugeText.includes("elevated") || gaugeText.includes("rising") || gaugeText.includes("watch")) return 12;
+      if (gaugeText.includes("normal") || gaugeText.includes("stable")) return 2;
+
+      // Many USGS results currently return a stage like "0.50 ft" without a flood threshold.
+      // Treat a simple stage number as useful context, but not as a major risk by itself.
+      const stageMatch = gaugeText.match(/([0-9]+(\.[0-9]+)?)\s*ft/);
+      if (stageMatch) return 2;
+
+      return 5;
+    }
+
+    function calculateDrainageRisk(rainRisk) {
+      // Placeholder until a real drainage / impervious surface / soil module is added.
+      if (rainRisk >= 25) return 10;
+      if (rainRisk >= 15) return 7;
+      if (rainRisk >= 8) return 4;
+      return 1;
     }
 
     function cleanValue(value, fallback = "Unavailable") {
@@ -550,10 +585,13 @@
       return String(value);
     }
 
+    function addReason(reasons, type, text) {
+      reasons.push({ type, text });
+    }
+
     function generateWhyThisScore(data) {
       const reasons = [];
       const {
-        surgeScore,
         level,
         feet,
         elevationRisk,
@@ -569,69 +607,85 @@
         usgsData
       } = data;
 
-      if (rainRisk >= 20) {
-        reasons.push("Forecast rainfall is a major driver of the current score and may increase runoff or flash-flood potential.");
-      } else if (rainRisk >= 10) {
-        reasons.push("Some rainfall risk is present in the forecast, but it is not currently the strongest risk factor.");
+      const zone = String(femaData?.zone || "").toUpperCase().trim();
+      const bfe = cleanValue(femaData?.bfe, "Not available");
+      const rainfallMessage = cleanValue(backendData?.message, "Rainfall forecast unavailable");
+      const alertText = cleanValue(nwsData?.alertText, "No active flood alerts");
+      const gaugeText = cleanValue(usgsData?.gauge, "Gauge unavailable");
+
+      // Rainfall: always explain it, whether it is good or bad.
+      if (rainRisk >= 25) {
+        addReason(reasons, "danger", `Forecast rainfall is a major risk driver: ${rainfallMessage}.`);
+      } else if (rainRisk >= 12) {
+        addReason(reasons, "warn", `Rainfall is contributing to the score: ${rainfallMessage}.`);
+      } else if (rainRisk > 0) {
+        addReason(reasons, "good", `Rainfall risk is currently low: ${rainfallMessage}.`);
       } else {
-        reasons.push("Rainfall risk is currently low based on the available forecast data.");
+        addReason(reasons, "good", "No meaningful rainfall risk is currently being added by the forecast model.");
       }
 
-      if (alertRisk > 0) {
-        reasons.push(`National Weather Service alert data is contributing to the score: ${cleanValue(nwsData?.alertText, "an alert may be active")}.`);
+      // NWS alerts.
+      if (alertRisk >= 25) {
+        addReason(reasons, "danger", `Official alert status is a major concern: ${alertText}.`);
+      } else if (alertRisk > 0) {
+        addReason(reasons, "warn", `National Weather Service alert data is adding risk: ${alertText}.`);
       } else {
-        reasons.push("No active National Weather Service flood alert is currently increasing the score for this location.");
+        addReason(reasons, "good", "No active National Weather Service flood alert is currently affecting this location.");
       }
 
+      // FEMA flood zone.
       if (femaRisk >= 20) {
-        reasons.push(`FEMA flood-zone data indicates mapped flood exposure for this location: ${cleanValue(femaData?.zone)}.`);
+        addReason(reasons, "warn", `FEMA mapping shows this location in a higher-risk flood zone (${cleanValue(femaData?.zone)}). Base Flood Elevation: ${bfe}.`);
+      } else if (zone === "X" || zone.includes("ZONE X")) {
+        addReason(reasons, "good", "FEMA mapping shows Zone X, meaning this location is outside the mapped Special Flood Hazard Area.");
       } else if (femaRisk > 0) {
-        reasons.push(`FEMA flood-zone data is being factored in: ${cleanValue(femaData?.zone)}.`);
+        addReason(reasons, "watch", `FEMA flood-zone context is included in the score: ${cleanValue(femaData?.zone)}. Base Flood Elevation: ${bfe}.`);
       } else {
-        reasons.push("FEMA flood-zone data is not currently adding major risk, or the flood-zone result is unavailable.");
+        addReason(reasons, "watch", "FEMA flood-zone data is unavailable or still limited for this location.");
       }
 
-      if (feet < 100) {
-        reasons.push(`Estimated ground elevation is relatively low at about ${feet} ft, which can increase flood exposure depending on local drainage and nearby waterways.`);
-      } else if (feet < 500) {
-        reasons.push(`Estimated ground elevation is about ${feet} ft, so elevation adds some context but is not the main risk driver.`);
+      // Elevation.
+      if (elevationRisk >= 25) {
+        addReason(reasons, "warn", `Estimated ground elevation is low at about ${feet} ft, which can increase exposure to flooding depending on nearby water, slope, and drainage.`);
+      } else if (elevationRisk >= 12) {
+        addReason(reasons, "watch", `Estimated ground elevation is about ${feet} ft, so elevation remains part of the flood-risk context.`);
       } else {
-        reasons.push(`Estimated ground elevation is about ${feet} ft, which lowers broad coastal-style flood exposure but does not eliminate local flash-flood risk.`);
+        addReason(reasons, "good", `Estimated ground elevation is about ${feet} ft. This lowers broad flood exposure, but local street flooding can still occur during intense rain.`);
       }
 
+      // USGS gauge.
       if (gaugeRisk >= 15) {
-        reasons.push(`Nearby USGS gauge conditions may be elevated: ${cleanValue(usgsData?.gauge)}.`);
+        addReason(reasons, "warn", `Nearby USGS gauge conditions may be elevated: ${gaugeText}.`);
       } else if (gaugeRisk > 5) {
-        reasons.push("Nearby USGS gauge data is available but does not currently appear to show severe flood conditions.");
+        addReason(reasons, "watch", `Nearby USGS gauge data is being monitored: ${gaugeText}.`);
+      } else if (gaugeRisk > 0) {
+        addReason(reasons, "good", `Nearby USGS gauge data is available and is not currently a major risk driver: ${gaugeText}.`);
       } else {
-        reasons.push("Nearby river-gauge conditions appear normal or are adding only minor risk at this time.");
+        addReason(reasons, "watch", "Nearby USGS gauge data is unavailable, so river-stage risk is not strongly weighted yet.");
       }
 
-      if (drainageRisk > 0) {
-        reasons.push("A prototype urban-drainage factor is included because heavy rain can overwhelm streets, culverts, and storm drains even away from mapped flood zones.");
+      // Prototype engineering factors.
+      if (drainageRisk >= 7) {
+        addReason(reasons, "watch", "Prototype drainage context is adding risk because heavy rainfall can overwhelm streets, culverts, and storm drains.");
+      } else {
+        addReason(reasons, "good", "Prototype drainage context is only adding a small baseline factor right now. A future Engineering Site Profile will add soils, slope, and drainage data.");
       }
 
       if (tideRisk > 0) {
-        reasons.push("Tide timing may affect drainage capacity in coastal areas.");
-      } else {
-        reasons.push("High-tide overlap is not active yet in this prototype, so it is not affecting the current score.");
-      }
-
-      if (backendData?.message) {
-        reasons.push(`Rainfall outlook: ${backendData.message}`);
+        addReason(reasons, "watch", "Tide timing may reduce drainage capacity in coastal areas.");
       }
 
       const summary = level === "DANGEROUS"
-        ? "Multiple live indicators are contributing to dangerous flood potential. Follow local emergency guidance and monitor official alerts."
+        ? "Overall assessment: multiple live indicators are pointing to dangerous flood potential. Follow official local guidance and monitor alerts closely."
         : level === "ELEVATED"
-          ? "Several conditions are raising the flood-risk score. This location should be monitored closely over the next 12 hours."
+          ? "Overall assessment: several conditions are raising flood potential for this address. This location should be watched closely over the next 12 hours."
           : level === "WATCH"
-            ? "Some risk factors are present, but current conditions do not indicate the highest flood-risk category."
-            : "Current live indicators suggest relatively low flood risk, while conditions may still change with new rainfall or alerts.";
+            ? "Overall assessment: some risk factors are present, but the strongest live flood indicators are not currently in the highest-risk range."
+            : "Overall assessment: current live indicators suggest relatively low flood risk for this address, while conditions may still change with new rainfall or alerts.";
 
       document.getElementById("whyList").innerHTML = reasons
-        .filter(Boolean)
-        .map(reason => `<li>${escapeHtml(reason)}</li>`)
+        .filter(item => item && item.text)
+        .map(item => `<li class="${escapeHtml(item.type)}">${escapeHtml(item.text)}</li>`)
         .join("");
 
       setText("whySummary", summary);
@@ -663,7 +717,7 @@
         ]);
 
         const nwsData = nwsResult.status === "fulfilled" ? nwsResult.value : { alertText: "NWS unavailable", alertRisk: 0 };
-        const backendData = rainfallResult.status === "fulfilled" ? rainfallResult.value : { message: "Backend rainfall unavailable", rainRisk: 3 };
+        const backendData = rainfallResult.status === "fulfilled" ? rainfallResult.value : { message: "Backend rainfall unavailable", rainRisk: 0 };
         const femaData = femaResult.status === "fulfilled" ? femaResult.value : { zone: "Unavailable", bfe: "Unavailable" };
         const usgsData = usgsResult.status === "fulfilled" ? usgsResult.value : { station: "USGS unavailable", gauge: "Unavailable" };
 
@@ -673,12 +727,12 @@
         console.log("USGS data:", usgsData);
 
         const alertRisk = Number(nwsData.alertRisk || 0);
-        const rainRisk = Number(backendData.rainRisk || 3);
+        const rainRisk = Number(backendData.rainRisk || 0);
         const elevationRisk = calculateElevationRisk(feet);
         const femaRisk = calculateFemaRisk(femaData);
         const gaugeRisk = calculateGaugeRisk(usgsData);
         const tideRisk = 0;
-        const drainageRisk = 10;
+        const drainageRisk = calculateDrainageRisk(rainRisk);
 
         setText("realAlertStatus", cleanValue(nwsData.alertText));
         setText("rainfallOutlook", cleanValue(backendData.message, "Backend rainfall unavailable"));
