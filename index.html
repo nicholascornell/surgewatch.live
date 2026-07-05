@@ -1076,14 +1076,30 @@
         console.log('USGS data:', usgsData);
         document.getElementById('gaugeDistance').innerHTML = `<span style="font-size:12px;color:#9bb4d4">${safeText(usgsData.station, 'Nearest gauge')}</span><br>${safeText(usgsData.gauge, 'Unavailable')}`;
 
-        const tideResponse = await fetch('https://mlwjgbyvikhpxrthvdec.supabase.co/functions/v1/tide', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lat, lon })
-        });
-        const tideData = await tideResponse.json();
-        console.log('Tide data:', tideData);
-        document.getElementById('tideOverlap').innerText = safeText(tideData.tideStatus, 'Unavailable');
+        let tideData = {
+          tideRisk: 0,
+          tideStatus: 'Tide check unavailable',
+          nextHighTide: 'Unavailable',
+          explanation: 'The tide layer could not be reached.'
+        };
+
+        try {
+          const tideResponse = await fetch('https://mlwjgbyvikhpxrthvdec.supabase.co/functions/v1/tide', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat, lon })
+          });
+
+          tideData = await tideResponse.json();
+          console.log('Tide data:', tideData);
+
+          document.getElementById('tideOverlap').innerText =
+            safeText(tideData.tideStatus, 'Tide check complete');
+
+        } catch (tideError) {
+          console.warn('Tide check failed:', tideError);
+          document.getElementById('tideOverlap').innerText = 'Tide check unavailable';
+        }
 
         const result = calculateFloodRisk({
           rainRisk,
