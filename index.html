@@ -661,6 +661,73 @@
   <script>
     let selectedWindowHours = 24;
 
+
+    function getWindowText(hours = selectedWindowHours) {
+      if (Number(hours) === 1) return 'Now';
+      return `Next ${hours} hours`;
+    }
+
+    function setRiskWindow(hours) {
+      selectedWindowHours = Number(hours);
+      document.querySelectorAll('.window-btn').forEach(btn => {
+        btn.classList.toggle('active', Number(btn.dataset.hours) === selectedWindowHours);
+      });
+
+      document.getElementById('scoreWindowLabel').innerText = `Window: ${getWindowText()}`;
+      document.getElementById('rainfallMetricLabel').innerText = selectedWindowHours === 1 ? 'Rainfall outlook' : `Rainfall outlook (${getWindowText().toLowerCase()})`;
+      document.getElementById('trendMetricLabel').innerText = getWindowText();
+
+      const currentAddress = document.getElementById('addressInput').value.trim();
+      const hasScore = document.getElementById('scoreNumber').innerText !== '--';
+      if (currentAddress && hasScore) runSurgeWatch();
+    }
+
+    function safeText(value, fallback = 'Unavailable') {
+      if (value === null || value === undefined || value === '') return fallback;
+      return String(value);
+    }
+
+    function setRiskVisual(score) {
+      const cleanScore = Number.isFinite(score) ? Math.max(1, Math.min(100, Math.round(score))) : 0;
+      document.getElementById('riskScale').style.setProperty('--score-pos', cleanScore);
+      document.getElementById('riskBubble').innerText = cleanScore || '--';
+    }
+
+    function getRiskLevel(score) {
+      if (score >= 75) return 'VERY HIGH';
+      if (score >= 50) return 'HIGH';
+      if (score >= 25) return 'MODERATE';
+      return 'LOW';
+    }
+
+    function parseInchesFromMessage(message) {
+      if (!message) return null;
+      const match = String(message).match(/([0-9]+(?:\.[0-9]+)?)\s*inches?/i);
+      return match ? parseFloat(match[1]) : null;
+    }
+
+    function renderBreakdown(components) {
+      if (!Array.isArray(components) || !components.length) {
+        document.getElementById('breakdownList').innerHTML = '<div class="breakdown-row"><span class="breakdown-name">Waiting for analysis</span><span class="breakdown-score">--</span><div class="component-bar"><div class="component-fill"></div></div></div>';
+        return;
+      }
+
+      const html = components.map(c => {
+        const name = c.name || c.label || c.key || 'Risk factor';
+        const score = Number(c.score ?? c.value ?? 0);
+        const max = Number(c.max ?? c.maxScore ?? 100);
+        const pct = max ? Math.round((score / max) * 100) : 0;
+        return `
+          <div class="breakdown-row">
+            <span class="breakdown-name">${name}</span>
+            <span class="breakdown-score">${Math.round(score)} / ${Math.round(max)}</span>
+            <div class="component-bar"><div class="component-fill" style="width:${pct}%"></div></div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('breakdownList').innerHTML = html;
+    }
+
     function renderWhyThisScore(result) {
       if (typeof result === 'string') {
         document.getElementById('whyList').innerHTML = `<li class="why-watch"><span class="why-icon">•</span><span>${result}</span></li>`;
