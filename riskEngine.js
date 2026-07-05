@@ -1,226 +1,1163 @@
-/*
-=========================================
- SurgeWatch Flood Risk Engine™
- Version 1.0
-=========================================
-*/
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SurgeWatch | Flood Risk Intelligence</title>
 
-function calculateFloodRisk(data) {
-
-    const result = {
-
-        rainfallScore: 0,
-        floodplainScore: 0,
-        riverScore: 0,
-        alertScore: 0,
-        elevationScore: 0,
-        drainageScore: 5,
-
-        totalScore: 0,
-        readinessScore: 0,
-        level: "LOW",
-
-        breakdown: [],
-        assessment: ""
-    };
-
-
-
-    // -----------------------------
-    // Rainfall (0-30)
-    // -----------------------------
-
-    result.rainfallScore = Math.min(30, data.rainRisk || 0);
-
-
-
-    // -----------------------------
-    // FEMA Flood Zone (0-15)
-    // -----------------------------
-
-    switch ((data.floodZone || "").toUpperCase()) {
-
-        case "VE":
-            result.floodplainScore = 15;
-            break;
-
-        case "AE":
-            result.floodplainScore = 12;
-            break;
-
-        case "AO":
-            result.floodplainScore = 10;
-            break;
-
-        case "A":
-            result.floodplainScore = 10;
-            break;
-
-        case "X":
-            result.floodplainScore = 2;
-            break;
-
-        default:
-            result.floodplainScore = 5;
+  <style>
+    :root {
+      --navy: #071026;
+      --navy2: #0b1430;
+      --yellow: #FFF600;
+      --white: #F8FAFC;
+      --muted: #A9B2C3;
+      --line: rgba(248, 250, 252, 0.14);
+      --green: #67e22f;
+      --orange: #ff9a00;
+      --red: #ff2e1f;
+      --blue: #4cb5ff;
+      --purple: #c16cff;
     }
 
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
 
-
-    // -----------------------------
-    // River Gauge (0-15)
-    // -----------------------------
-
-    if ((data.gauge || "").toLowerCase().includes("flood")) {
-
-        result.riverScore = 15;
-
-    } else if ((data.gauge || "").toLowerCase().includes("above")) {
-
-        result.riverScore = 10;
-
-    } else {
-
-        result.riverScore = 4;
-
+    body {
+      font-family: Inter, Helvetica, Arial, sans-serif;
+      background: radial-gradient(circle at top left, #10204a 0%, var(--navy) 42%, #030713 100%);
+      color: var(--white);
+      min-height: 100vh;
     }
 
+    .page {
+      width: min(1180px, 92%);
+      margin: 0 auto;
+      padding: 28px 0 56px;
+    }
+
+    header, footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      border-color: var(--line);
+    }
+
+    header {
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      letter-spacing: 0.08em;
+      font-weight: 950;
+      font-size: 1.1rem;
+    }
+
+    .mark {
+      width: 38px;
+      height: 38px;
+      border: 3px solid var(--yellow);
+      border-radius: 50%;
+      position: relative;
+    }
+
+    .mark::after {
+      content: "";
+      position: absolute;
+      left: 6px;
+      right: 6px;
+      bottom: 8px;
+      height: 8px;
+      border-bottom: 3px solid var(--yellow);
+      border-radius: 50%;
+      transform: rotate(-8deg);
+    }
+
+    nav {
+      display: flex;
+      gap: 22px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .hero {
+      padding: 34px 0 70px;
+      display: grid;
+      grid-template-columns: 1.04fr 0.96fr;
+      gap: 46px;
+      align-items: start;
+    }
+
+    .hero-copy { padding-top: 18px; }
+
+    .eyebrow {
+      color: var(--yellow);
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      font-size: 0.82rem;
+      font-weight: 900;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      font-size: clamp(3rem, 7.7vw, 6.45rem);
+      line-height: 0.9;
+      letter-spacing: -0.08em;
+      font-weight: 950;
+      margin-bottom: 24px;
+    }
+
+    h1 span { color: var(--yellow); }
+
+    .subtitle {
+      font-size: clamp(1.03rem, 1.8vw, 1.25rem);
+      line-height: 1.65;
+      color: var(--muted);
+      max-width: 680px;
+      margin-bottom: 28px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+    }
+
+    input {
+      padding: 14px 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      color: white;
+      min-width: 300px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    input::placeholder { color: #8d96aa; }
+
+    .button {
+      border: 1px solid var(--yellow);
+      background: var(--yellow);
+      color: #050814;
+      padding: 14px 20px;
+      font-weight: 950;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-radius: 999px;
+      text-decoration: none;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .button.secondary {
+      background: transparent;
+      color: var(--white);
+      border-color: var(--line);
+    }
+
+    .card, .feature, .waitlist {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.045);
+      border-radius: 28px;
+    }
+
+    .card {
+      padding: 24px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+      position: sticky;
+      top: 18px;
+    }
+
+    .quick-layers {
+      margin-top: 30px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.035);
+      border-radius: 24px;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+    }
+
+    .layer {
+      border-left: 2px solid rgba(255,246,0,0.45);
+      padding-left: 14px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .layer-icon { color: var(--yellow); font-weight: 950; }
+    .layer b { color: var(--white); }
+    .layer span { color: var(--muted); font-size: 0.9rem; line-height: 1.35; }
+
+    .score-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+      margin-bottom: 16px;
+    }
+
+    .score-title {
+      color: var(--yellow);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-weight: 900;
+      font-size: 0.82rem;
+      margin-bottom: 8px;
+    }
+
+    .score-number-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .score-number-wrap strong {
+      font-size: 3.4rem;
+      color: var(--yellow);
+      line-height: 0.9;
+    }
+
+    .score-number-wrap span { color: var(--muted); font-weight: 900; }
+    .score-window-label { color: var(--muted); margin-top: 8px; font-size: 0.9rem; }
+
+    .window-selector {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.035);
+      border-radius: 18px;
+      padding: 12px;
+      margin-bottom: 16px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .window-label {
+      color: var(--muted);
+      font-size: 0.76rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 900;
+    }
+
+    .window-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .window-btn {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.035);
+      color: var(--white);
+      border-radius: 999px;
+      padding: 9px 8px;
+      cursor: pointer;
+      font-weight: 950;
+      font-size: 0.78rem;
+      transition: 0.18s ease;
+    }
+
+    .window-btn:hover, .window-btn.active {
+      border-color: var(--yellow);
+      background: var(--yellow);
+      color: #061026;
+    }
+
+    .pill {
+      border: 1px solid var(--yellow);
+      color: var(--yellow);
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-size: 0.78rem;
+      font-weight: 950;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .risk-scale { margin: 16px 0 22px; padding-bottom: 4px; }
+    .bar-wrap { position: relative; height: 34px; margin: 8px 0 2px; }
+
+    .risk-bar {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 14px;
+      height: 11px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--green) 0 24%, var(--yellow) 24% 49%, var(--orange) 49% 74%, var(--red) 74% 100%);
+      box-shadow: 0 0 24px rgba(255,246,0,0.12);
+    }
+
+    .risk-pointer {
+      position: absolute;
+      top: 0;
+      left: calc(var(--score-pos, 0) * 1%);
+      transform: translateX(-50%);
+      text-align: center;
+      transition: left 0.4s ease;
+    }
+
+    .risk-bubble {
+      background: var(--white);
+      color: #0A1026;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 0.78rem;
+      font-weight: 950;
+      line-height: 1.15;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+      display: inline-block;
+    }
+
+    .risk-diamond {
+      width: 10px;
+      height: 10px;
+      background: var(--white);
+      transform: rotate(45deg);
+      margin: -1px auto 0;
+    }
+
+    .scale-numbers, .scale-labels {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: start;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .scale-numbers { font-size: 0.9rem; margin-top: 2px; }
+    .scale-numbers span:nth-child(2), .scale-labels span:nth-child(2) { text-align: center; }
+    .scale-numbers span:nth-child(3), .scale-labels span:nth-child(3) { text-align: center; }
+    .scale-numbers span:nth-child(4), .scale-labels span:nth-child(4) { text-align: right; }
+
+    .scale-labels {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 7px;
+    }
+    .scale-labels span:nth-child(1) { color: var(--green); }
+    .scale-labels span:nth-child(2) { color: var(--yellow); }
+    .scale-labels span:nth-child(3) { color: var(--orange); }
+    .scale-labels span:nth-child(4) { color: var(--red); }
+
+    .metrics { display: grid; gap: 0; border-top: 1px solid var(--line); }
+
+    .metric {
+      display: grid;
+      grid-template-columns: 22px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--line);
+      padding: 12px 0;
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .metric-icon { color: var(--white); opacity: 0.9; text-align: center; }
+
+    .metric b {
+      color: var(--white);
+      text-align: right;
+      max-width: 270px;
+      overflow-wrap: anywhere;
+    }
+
+    .metric b.ready { color: var(--green); }
+    .metric b.linkish { color: var(--blue); }
+
+    .score-breakdown, .assessment {
+      margin-top: 22px;
+      border-top: 1px solid var(--line);
+      padding-top: 20px;
+    }
+
+    .score-breakdown h3, .assessment h3 {
+      color: var(--yellow);
+      font-size: 1.06rem;
+      margin-bottom: 12px;
+    }
+
+    .breakdown-list { display: grid; gap: 10px; }
+    .breakdown-row { display: grid; grid-template-columns: 1fr 72px; gap: 12px; align-items: center; }
+    .breakdown-name { color: #d6dce8; font-size: 0.88rem; }
+    .breakdown-score { color: var(--white); font-weight: 900; text-align: right; font-size: 0.86rem; }
+    .component-bar { grid-column: 1 / -1; height: 7px; background: rgba(255,255,255,0.09); border-radius: 999px; overflow: hidden; margin-top: -4px; }
+    .component-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--green), var(--yellow), var(--orange)); width: 0%; transition: width 0.35s ease; }
 
 
-    // -----------------------------
-    // NWS Alerts (0-20)
-    // -----------------------------
+    .breakdown-item {
+      border: 1px solid rgba(248,250,252,0.10);
+      background: rgba(255,255,255,0.028);
+      border-radius: 16px;
+      overflow: hidden;
+    }
 
-    result.alertScore = Math.min(20, data.alertRisk || 0);
+    .breakdown-summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 12px 12px 14px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .breakdown-summary::-webkit-details-marker { display: none; }
+
+    .breakdown-title {
+      color: #d6dce8;
+      font-size: 0.9rem;
+      font-weight: 900;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .breakdown-chevron {
+      color: var(--yellow);
+      display: inline-block;
+      width: 14px;
+      transition: transform 0.18s ease;
+    }
+
+    .breakdown-item[open] .breakdown-chevron { transform: rotate(90deg); }
+
+    .breakdown-subtitle {
+      grid-column: 1 / -1;
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-top: -5px;
+      line-height: 1.35;
+    }
+
+    .breakdown-details {
+      border-top: 1px solid rgba(248,250,252,0.10);
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .detail-box {
+      border: 1px solid rgba(248,250,252,0.10);
+      background: rgba(0,0,0,0.12);
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .detail-label {
+      color: var(--muted);
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    .detail-value {
+      color: var(--white);
+      font-weight: 900;
+      font-size: 0.88rem;
+      overflow-wrap: anywhere;
+    }
+
+    .detail-explanation {
+      color: #d6dce8;
+      line-height: 1.45;
+      font-size: 0.88rem;
+    }
+
+    #whyList {
+      list-style: none;
+      display: grid;
+      gap: 10px;
+      color: #d6dce8;
+      line-height: 1.45;
+      font-size: 0.94rem;
+    }
+
+    #whyList li {
+      display: grid;
+      grid-template-columns: 24px 1fr;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .why-icon { font-weight: 950; }
+    .why-good .why-icon { color: var(--green); }
+    .why-watch .why-icon { color: var(--yellow); }
+    .why-high .why-icon { color: var(--orange); }
+    .why-danger .why-icon { color: var(--red); }
+
+    .summary-line {
+      color: var(--muted);
+      line-height: 1.55;
+      margin-top: 14px;
+      font-size: 0.94rem;
+    }
+
+    .section-title {
+      font-size: 0.85rem;
+      letter-spacing: 0.22em;
+      color: var(--yellow);
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-top: 16px;
+    }
+
+    .feature { padding: 22px; }
+    .feature h3 { font-size: 1rem; margin-bottom: 10px; }
+    .feature p { color: var(--muted); line-height: 1.55; font-size: 0.95rem; }
+
+    .waitlist {
+      margin-top: 48px;
+      padding: 28px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 22px;
+      align-items: center;
+      background: linear-gradient(90deg, rgba(255, 246, 0, 0.1), rgba(255, 255, 255, 0.025));
+    }
+
+    .waitlist h2 { font-size: 1.7rem; margin-bottom: 8px; }
+    .waitlist p { color: var(--muted); line-height: 1.55; }
+
+    footer {
+      margin-top: 54px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 980px) {
+      .hero { grid-template-columns: 1fr; padding-top: 42px; }
+      .card { position: static; }
+      .quick-layers { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 800px) {
+      nav { display: none; }
+      .features { grid-template-columns: 1fr; }
+      .waitlist { grid-template-columns: 1fr; }
+      footer { flex-direction: column; }
+      input, .button { width: 100%; text-align: center; }
+      .quick-layers { grid-template-columns: 1fr; }
+      .layer { border-left: none; padding-left: 0; border-top: 1px solid var(--line); padding-top: 14px; }
+      .layer:first-child { border-top: none; padding-top: 0; }
+      .metric { grid-template-columns: 20px 1fr; }
+      .metric b { grid-column: 2; text-align: left; max-width: 100%; }
+      .window-buttons { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <header>
+      <div class="brand">
+        <div class="mark"></div>
+        <div>SURGE<span style="color: var(--yellow);">WATCH</span></div>
+      </div>
+
+      <nav>
+        <span>Live Data</span>
+        <span>Flood Risk Score</span>
+        <span>Alerts</span>
+        <span>About</span>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">Live site intelligence</div>
+        <h1>Know before<br />the water <span>surges.</span></h1>
+
+        <p class="subtitle">
+          SurgeWatch monitors live weather, river levels, elevation, FEMA flood data, and site conditions for any address — then turns them into a clear flood-risk score.
+        </p>
+
+        <div class="actions">
+          <input type="text" id="addressInput" placeholder="Enter an address or ZIP code" />
+          <button class="button" onclick="runSurgeWatch()">Check Flood Risk</button>
+          <a class="button secondary" href="#features">▱ View Concept</a>
+        </div>
+
+        <div class="quick-layers" aria-label="SurgeWatch data layers">
+          <div class="layer">
+            <div class="layer-icon">☁</div>
+            <b>Live Weather</b>
+            <span>Rainfall forecasts and official flood alerts</span>
+          </div>
+          <div class="layer">
+            <div class="layer-icon">≋</div>
+            <b>River & Water Levels</b>
+            <span>Nearest USGS gauges and future tide monitoring</span>
+          </div>
+          <div class="layer">
+            <div class="layer-icon">△</div>
+            <b>Elevation & Terrain</b>
+            <span>Ground elevation and future slope analysis</span>
+          </div>
+          <div class="layer">
+            <div class="layer-icon">◎</div>
+            <b>Engineering Site Profile™</b>
+            <span>Future soil, geology, drainage, and foundation context</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="resultCard">
+        <div class="score-top">
+          <div>
+            <div class="score-title">Flood Risk Score</div>
+            <div class="score-number-wrap">
+              <strong id="scoreNumber">--</strong>
+              <span>/ 100</span>
+            </div>
+            <div class="score-window-label" id="scoreWindowLabel">Window: Next 24 hours</div>
+          </div>
+          <div class="pill" id="riskLevel">READY</div>
+        </div>
+
+        <div class="window-selector" aria-label="Flood risk time window">
+          <div class="window-label">Risk Window</div>
+          <div class="window-buttons">
+            <button type="button" class="window-btn" data-hours="1" onclick="setRiskWindow(1)">Now</button>
+            <button type="button" class="window-btn" data-hours="12" onclick="setRiskWindow(12)">12 hrs</button>
+            <button type="button" class="window-btn active" data-hours="24" onclick="setRiskWindow(24)">24 hrs</button>
+            <button type="button" class="window-btn" data-hours="48" onclick="setRiskWindow(48)">48 hrs</button>
+          </div>
+        </div>
+
+        <div class="risk-scale" id="riskScale" style="--score-pos: 0;">
+          <div class="bar-wrap">
+            <div class="risk-bar"></div>
+            <div class="risk-pointer" id="riskPointer">
+              <div class="risk-bubble" id="riskBubble">--</div>
+              <div class="risk-diamond"></div>
+            </div>
+          </div>
+          <div class="scale-numbers">
+            <span>1</span><span>25</span><span>50</span><span>100</span>
+          </div>
+          <div class="scale-labels">
+            <span>Low Risk<br>1–24</span>
+            <span>Moderate<br>25–49</span>
+            <span>High<br>50–74</span>
+            <span>Very High<br>75–100</span>
+          </div>
+        </div>
+
+        <div class="metrics">
+          <div class="metric"><span class="metric-icon">⌖</span><span>Address monitored</span><b id="addressLabel">Enter an address</b></div>
+          <div class="metric"><span class="metric-icon">◎</span><span>Coordinates</span><b id="coordsLabel">--</b></div>
+          <div class="metric"><span class="metric-icon">△</span><span>Ground elevation</span><b id="elevationLabel">--</b></div>
+          <div class="metric"><span class="metric-icon">≋</span><span>FEMA Flood Zone</span><b id="femaZone">Coming soon</b></div>
+          <div class="metric"><span class="metric-icon">↕</span><span>Base Flood Elevation</span><b id="baseFloodElevation">Coming soon</b></div>
+          <div class="metric"><span class="metric-icon">◉</span><span>NWS alert status</span><b id="realAlertStatus">Not checked</b></div>
+          <div class="metric"><span class="metric-icon">☔</span><span id="rainfallMetricLabel">Rainfall outlook (next 24 hours)</span><b id="rainfallOutlook">Coming soon</b></div>
+          <div class="metric"><span class="metric-icon">≋</span><span>High tide overlap</span><b id="tideOverlap">Coming soon</b></div>
+          <div class="metric"><span class="metric-icon">⌂</span><span>Site readiness</span><b id="readinessLabel">--</b></div>
+          <div class="metric"><span class="metric-icon">◷</span><span id="trendMetricLabel">Next 24 hours</span><b id="futureTrend">--</b></div>
+          <div class="metric"><span class="metric-icon">≋</span><span>Nearest USGS gauge</span><b class="linkish" id="gaugeDistance">Coming soon</b></div>
+          <div class="metric"><span class="metric-icon">☁</span><span>Notification mode</span><b class="ready">Ready</b></div>
+        </div>
+
+        <div class="score-breakdown">
+          <h3>Score breakdown</h3>
+          <div class="breakdown-list" id="breakdownList">
+            <div class="breakdown-row"><span class="breakdown-name">Waiting for analysis</span><span class="breakdown-score">--</span><div class="component-bar"><div class="component-fill"></div></div></div>
+          </div>
+        </div>
+
+        <div class="assessment">
+          <h3>Engineering assessment</h3>
+          <ul id="whyList">
+            <li class="why-watch"><span class="why-icon">•</span><span>Waiting for analysis...</span></li>
+          </ul>
+          <p class="summary-line" id="whySummary"></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="section-title">What SurgeWatch will do</div>
+
+      <div class="features">
+        <div class="feature">
+          <h3>Address-Based Risk</h3>
+          <p>Enter a home address and see location-specific flood exposure based on elevation, nearby waterways, alerts, and live conditions.</p>
+        </div>
+
+        <div class="feature">
+          <h3>Weighted Flood Risk Score</h3>
+          <p>A risk engine combines rainfall, NWS alerts, FEMA data, gauge conditions, elevation, drainage, and tide influence into one transparent score.</p>
+        </div>
+
+        <div class="feature">
+          <h3>Engineering Site Profile™</h3>
+          <p>Future layers can add soil readiness, slope, geology, drainage, and foundation context for deeper site intelligence.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="waitlist">
+      <div>
+        <h2>Early prototype in development.</h2>
+        <p>
+          SurgeWatch.live is being built as a civic engineering project focused on real-time flood awareness, site intelligence, infrastructure monitoring, and early-warning notifications.
+        </p>
+      </div>
+
+      <a class="button" href="mailto:NCKKCornell@gmail.com">Contact</a>
+    </section>
+
+    <footer>
+      <span>Website design © 2026 Patnik Creative</span>
+      <span>Built for flood awareness, site intelligence, and engineering data.</span>
+    </footer>
+  </main>
+
+  <script src="riskEngine.js"></script>
+
+  <script>
+    let selectedWindowHours = 24;
 
 
+    function getWindowText(hours = selectedWindowHours) {
+      if (Number(hours) === 1) return 'Now';
+      return `Next ${hours} hours`;
+    }
 
-    // -----------------------------
-    // Elevation (0-10)
-    // -----------------------------
+    function setRiskWindow(hours) {
+      selectedWindowHours = Number(hours);
+      document.querySelectorAll('.window-btn').forEach(btn => {
+        btn.classList.toggle('active', Number(btn.dataset.hours) === selectedWindowHours);
+      });
 
-    const feet = data.elevationFeet || 0;
+      document.getElementById('scoreWindowLabel').innerText = `Window: ${getWindowText()}`;
+      document.getElementById('rainfallMetricLabel').innerText = selectedWindowHours === 1 ? 'Rainfall outlook' : `Rainfall outlook (${getWindowText().toLowerCase()})`;
+      document.getElementById('trendMetricLabel').innerText = getWindowText();
 
-    if (feet < 20)
-        result.elevationScore = 10;
+      const currentAddress = document.getElementById('addressInput').value.trim();
+      const hasScore = document.getElementById('scoreNumber').innerText !== '--';
+      if (currentAddress && hasScore) runSurgeWatch();
+    }
 
-    else if (feet < 100)
-        result.elevationScore = 7;
+    function safeText(value, fallback = 'Unavailable') {
+      if (value === null || value === undefined || value === '') return fallback;
+      return String(value);
+    }
 
-    else if (feet < 500)
-        result.elevationScore = 4;
+    function setRiskVisual(score) {
+      const cleanScore = Number.isFinite(score) ? Math.max(1, Math.min(100, Math.round(score))) : 0;
+      document.getElementById('riskScale').style.setProperty('--score-pos', cleanScore);
+      document.getElementById('riskBubble').innerText = cleanScore || '--';
+    }
 
-    else
-        result.elevationScore = 1;
+    function getRiskLevel(score) {
+      if (score >= 75) return 'VERY HIGH';
+      if (score >= 50) return 'HIGH';
+      if (score >= 25) return 'MODERATE';
+      return 'LOW';
+    }
 
+    function parseInchesFromMessage(message) {
+      if (!message) return null;
+      const match = String(message).match(/([0-9]+(?:\.[0-9]+)?)\s*inches?/i);
+      return match ? parseFloat(match[1]) : null;
+    }
 
+    function escapeHtml(value) {
+      return safeText(value, '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
 
-    // -----------------------------
-    // Total Score
-    // -----------------------------
+    function getComponentKey(component) {
+      const raw = `${component.key || ''} ${component.name || ''} ${component.label || ''}`.toLowerCase();
+      if (raw.includes('rain')) return 'rainfall';
+      if (raw.includes('nws') || raw.includes('alert')) return 'alerts';
+      if (raw.includes('fema') || raw.includes('flood zone') || raw.includes('floodplain')) return 'fema';
+      if (raw.includes('usgs') || raw.includes('river') || raw.includes('gauge')) return 'river';
+      if (raw.includes('elevation') || raw.includes('ground')) return 'elevation';
+      if (raw.includes('drainage') || raw.includes('urban')) return 'drainage';
+      if (raw.includes('tide') || raw.includes('coastal')) return 'tide';
+      return component.key || 'factor';
+    }
 
-    result.totalScore =
-        result.rainfallScore +
-        result.floodplainScore +
-        result.riverScore +
-        result.alertScore +
-        result.elevationScore +
-        result.drainageScore;
+    function enhanceBreakdown(components, context = {}) {
+      if (!Array.isArray(components)) return [];
 
-    result.totalScore = Math.min(100, result.totalScore);
+      return components.map(component => {
+        const key = getComponentKey(component);
+        const base = { ...component, key };
+        const name = base.name || base.label || base.key || 'Risk factor';
+        const score = Math.round(Number(base.score ?? base.value ?? 0));
+        const max = Math.round(Number(base.max ?? base.maxScore ?? 100));
 
-    result.readinessScore = 100 - result.totalScore;
+        const enhanced = {
+          ...base,
+          name,
+          score,
+          max,
+          subtitle: base.subtitle || base.summary || '',
+          details: base.details || [],
+          explanation: base.explanation || base.reason || ''
+        };
 
-
-
-    // -----------------------------
-    // Risk Level
-    // -----------------------------
-
-    if (result.totalScore >= 80)
-        result.level = "DANGEROUS";
-
-    else if (result.totalScore >= 60)
-        result.level = "HIGH";
-
-    else if (result.totalScore >= 35)
-        result.level = "WATCH";
-
-    else
-        result.level = "LOW";
-
-
-
-    // -----------------------------
-    // Score Breakdown
-    // -----------------------------
-
-    result.breakdown = [
-
-        {
-            label: "Rainfall",
-            score: result.rainfallScore,
-            max: 30
-        },
-
-        {
-            label: "Floodplain",
-            score: result.floodplainScore,
-            max: 15
-        },
-
-        {
-            label: "River Conditions",
-            score: result.riverScore,
-            max: 15
-        },
-
-        {
-            label: "Weather Alerts",
-            score: result.alertScore,
-            max: 20
-        },
-
-        {
-            label: "Elevation",
-            score: result.elevationScore,
-            max: 10
-        },
-
-        {
-            label: "Drainage",
-            score: result.drainageScore,
-            max: 10
+        if (key === 'rainfall') {
+          enhanced.subtitle = enhanced.subtitle || context.rainfallMessage || 'Forecast rainfall contribution';
+          enhanced.details = enhanced.details.length ? enhanced.details : [
+            ['Forecast total', typeof context.rainfallInches === 'number' ? `${context.rainfallInches.toFixed(2)} in` : 'Unavailable'],
+            ['Peak hourly rain', typeof context.maxHourlyRain === 'number' ? `${context.maxHourlyRain.toFixed(2)} in/hr` : 'Unavailable'],
+            ['Contribution', `+${score} points`]
+          ];
+          enhanced.explanation = enhanced.explanation || 'Rainfall is weighted heavily because intense or prolonged rain can create rapid runoff, street flooding, and flash-flood conditions.';
         }
 
-    ];
+        if (key === 'alerts') {
+          enhanced.subtitle = enhanced.subtitle || safeText(context.alertText, 'No active alert details');
+          enhanced.details = enhanced.details.length ? enhanced.details : [
+            ['NWS status', safeText(context.alertText, 'Unavailable')],
+            ['Alert risk', `${context.alertRisk || 0}`],
+            ['Contribution', `+${score} points`]
+          ];
+          enhanced.explanation = enhanced.explanation || 'Official National Weather Service alerts increase the score because they reflect active or expected flood hazards.';
+        }
 
+        if (key === 'fema') {
+          enhanced.subtitle = enhanced.subtitle || `Flood Zone ${safeText(context.femaZone, 'Unknown')}`;
+          enhanced.details = enhanced.details.length ? enhanced.details : [
+            ['FEMA zone', safeText(context.femaZone, 'Unknown')],
+            ['Base flood elevation', safeText(context.baseFloodElevation, 'Not applicable')],
+            ['Contribution', `+${score} points`]
+          ];
+          enhanced.explanation = enhanced.explanation || 'FEMA floodplain data represents mapped flood exposure and helps identify whether the property sits inside a higher-risk flood zone.';
+        }
 
+        if (key === 'river') {
+          enhanced.subtitle = enhanced.subtitle || safeText(context.usgsStation, 'Nearest USGS gauge');
+          enhanced.details = enhanced.details.length ? enhanced.details : [
+            ['Nearest gauge', safeText(context.usgsStation, 'Unavailable')],
+            ['Gauge reading', safeText(context.usgsText, 'Unavailable')],
+            ['Contribution', `+${score} points`]
+          ];
+          enhanced.explanation = enhanced.explanation || 'Nearby river and stream gauges help show whether water levels are already elevated before or during rainfall.';
+        }
 
-    // -----------------------------
-    // Engineering Assessment
-    // -----------------------------
+        if (key === 'elevation') {
+          enhanced.subtitle = enhanced.subtitle || (typeof context.elevationFeet === 'number' ? `${context.elevationFeet} ft ground elevation` : 'Ground elevation factor');
+          enhanced.details = enhanced.details.length ? enhanced.details : [
+            ['Ground elevation', typeof context.elevationFeet === 'number' ? `${context.elevationFeet} ft` : 'Unavailable'],
+            ['Contribution', `+${score} points`]
+          ];
+          enhanced.explanation = enhanced.explanation || 'Lower elevations can increase exposure to coastal, river, and poor-drainage flooding, especially when combined with heavy rainfall.';
+        }
 
-    if (result.totalScore < 35) {
+        if (key === 'drainage') {
+          enhanced.subtitle = enhanced.subtitle || 'Baseline local drainage factor';
+          enhanced.details = enhanced.details.length ? enhanced.details : [
+            ['Drainage model', 'Baseline'],
+            ['Contribution', `+${score} points`]
+          ];
+          enhanced.explanation = enhanced.explanation || 'This placeholder accounts for local drainage sensitivity until more detailed stormwater, impervious-surface, and terrain data are added.';
+        }
 
-        result.assessment =
-            "Current conditions indicate a relatively low flood risk for the selected forecast window.";
+        if (key === 'tide') {
+          enhanced.subtitle = enhanced.subtitle || 'Coastal/tidal influence placeholder';
+          enhanced.details = enhanced.details.length ? enhanced.details : [
+            ['Tide data', 'Backend coming soon'],
+            ['Contribution', `+${score} points`]
+          ];
+          enhanced.explanation = enhanced.explanation || 'Tide overlap will matter most in coastal and tidal river areas where high water can slow drainage.';
+        }
 
+        return enhanced;
+      });
     }
 
-    else if (result.totalScore < 60) {
+    function renderBreakdown(components, context = {}) {
+      const enhanced = enhanceBreakdown(components, context);
 
-        result.assessment =
-            "Some engineering factors indicate elevated flood potential. Continue monitoring changing conditions.";
+      if (!enhanced.length) {
+        document.getElementById('breakdownList').innerHTML = '<div class="breakdown-row"><span class="breakdown-name">Waiting for analysis</span><span class="breakdown-score">--</span><div class="component-bar"><div class="component-fill"></div></div></div>';
+        return;
+      }
 
+      const html = enhanced.map(c => {
+        const pct = c.max ? Math.round((c.score / c.max) * 100) : 0;
+        const detailRows = Array.isArray(c.details) ? c.details.map(item => {
+          const label = Array.isArray(item) ? item[0] : (item.label || item.name || 'Detail');
+          const value = Array.isArray(item) ? item[1] : (item.value || item.text || '');
+          return `
+            <div class="detail-box">
+              <div class="detail-label">${escapeHtml(label)}</div>
+              <div class="detail-value">${escapeHtml(value)}</div>
+            </div>
+          `;
+        }).join('') : '';
+
+        return `
+          <details class="breakdown-item">
+            <summary class="breakdown-summary">
+              <span class="breakdown-title"><span class="breakdown-chevron">▶</span>${escapeHtml(c.name)}</span>
+              <span class="breakdown-score">${c.score} / ${c.max}</span>
+              <span class="breakdown-subtitle">${escapeHtml(c.subtitle)}</span>
+              <div class="component-bar"><div class="component-fill" style="width:${pct}%"></div></div>
+            </summary>
+            <div class="breakdown-details">
+              <div class="detail-grid">${detailRows}</div>
+              <div class="detail-explanation">${escapeHtml(c.explanation)}</div>
+            </div>
+          </details>
+        `;
+      }).join('');
+
+      document.getElementById('breakdownList').innerHTML = html;
     }
 
-    else {
+    function renderWhyThisScore(result) {
+      if (typeof result === 'string') {
+        document.getElementById('whyList').innerHTML = `<li class="why-watch"><span class="why-icon">•</span><span>${result}</span></li>`;
+        document.getElementById('whySummary').innerText = '';
+        return;
+      }
 
-        result.assessment =
-            "Multiple engineering indicators suggest a high flood risk. Monitor official warnings and be prepared to act.";
+      const assessment = result?.assessment || result || {};
+      const reasons = assessment.reasons || result?.reasons || [];
+      const summary = assessment.summary || result?.summary || '';
 
+      if (Array.isArray(reasons) && reasons.length) {
+        const iconByType = { good: '✓', watch: '•', high: '!', danger: '⚠' };
+        const html = reasons.map(reason => {
+          const type = reason.type || 'watch';
+          return `<li class="why-${type}"><span class="why-icon">${iconByType[type] || '•'}</span><span>${reason.text || reason}</span></li>`;
+        }).join('');
+
+        document.getElementById('whyList').innerHTML = html;
+        document.getElementById('whySummary').innerText = summary;
+        return;
+      }
+
+      const text = assessment.text || assessment.message || summary || 'Analysis unavailable.';
+      document.getElementById('whyList').innerHTML = `<li class="why-watch"><span class="why-icon">•</span><span>${text}</span></li>`;
+      document.getElementById('whySummary').innerText = summary && summary !== text ? summary : '';
     }
 
-    return result;
+    async function runSurgeWatch() {
+      const input = document.getElementById('addressInput').value.trim();
+      if (!input) {
+        alert('Please enter an address or ZIP code.');
+        return;
+      }
 
-}
+      document.getElementById('addressLabel').innerText = input;
+      document.getElementById('coordsLabel').innerText = 'Looking up location...';
+      document.getElementById('elevationLabel').innerText = 'Checking elevation...';
+      document.getElementById('femaZone').innerText = 'Checking FEMA...';
+      document.getElementById('baseFloodElevation').innerText = 'Checking...';
+      document.getElementById('realAlertStatus').innerText = 'Checking NWS...';
+      document.getElementById('rainfallOutlook').innerText = 'Checking rainfall...';
+      document.getElementById('gaugeDistance').innerText = 'Checking USGS...';
+      document.getElementById('scoreNumber').innerText = '--';
+      document.getElementById('riskLevel').innerText = 'CHECKING';
+      document.getElementById('readinessLabel').innerText = '--';
+      document.getElementById('futureTrend').innerText = '--';
+      document.getElementById('scoreWindowLabel').innerText = `Window: ${getWindowText()}`;
+      document.getElementById('rainfallMetricLabel').innerText = selectedWindowHours === 1 ? 'Rainfall outlook' : `Rainfall outlook (${getWindowText().toLowerCase()})`;
+      document.getElementById('trendMetricLabel').innerText = getWindowText();
+      setRiskVisual(0);
+      renderBreakdown([]);
+      renderWhyThisScore({ reasons: [{ type: 'watch', text: 'Running live flood-risk analysis...' }], summary: '' });
+
+      try {
+        const isZip = /^\d{5}$/.test(input);
+        const geoQueries = isZip
+          ? [
+              `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=${encodeURIComponent(input + ' United States')}`,
+              `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&postalcode=${encodeURIComponent(input)}`
+            ]
+          : [
+              `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=${encodeURIComponent(input)}`
+            ];
+
+        let geoData = [];
+        for (const geoUrl of geoQueries) {
+          const geoResponse = await fetch(geoUrl);
+          const possibleGeoData = await geoResponse.json();
+          if (Array.isArray(possibleGeoData) && possibleGeoData.length) {
+            geoData = possibleGeoData;
+            break;
+          }
+        }
+        if (!geoData.length) throw new Error('Address not found');
+
+        const lat = parseFloat(geoData[0].lat);
+        const lon = parseFloat(geoData[0].lon);
+
+        document.getElementById('coordsLabel').innerText = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+
+        const elevationResponse = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`);
+        const elevationData = await elevationResponse.json();
+        const meters = elevationData.elevation[0];
+        const feet = Math.round(meters * 3.28084);
+        document.getElementById('elevationLabel').innerText = feet + ' ft';
+
+        const nwsResponse = await fetch('https://mlwjgbyvikhpxrthvdec.supabase.co/functions/v1/nws', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lat, lon })
+        });
+        const nwsData = await nwsResponse.json();
+        document.getElementById('realAlertStatus').innerText = safeText(nwsData.alertText, 'Unavailable');
+        const alertRisk = Number(nwsData.alertRisk || 0);
+
+        const backendResponse = await fetch('https://mlwjgbyvikhpxrthvdec.supabase.co/functions/v1/readiness', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lat, lon, hours: selectedWindowHours })
+        });
+        const backendData = await backendResponse.json();
+        console.log('Readiness backend data:', backendData);
+        const rainRisk = Number(backendData.rainRisk || 0);
+        const rainfallMessage = backendData.message || 'Backend rainfall unavailable';
+        const rainfallInches = typeof backendData.rainTotal === 'number' ? backendData.rainTotal : parseInchesFromMessage(rainfallMessage);
+        const maxHourlyRain = typeof backendData.maxHourlyRain === 'number' ? backendData.maxHourlyRain : null;
+        document.getElementById('rainfallOutlook').innerText = rainfallMessage;
+
+        const femaResponse = await fetch('https://mlwjgbyvikhpxrthvdec.supabase.co/functions/v1/fema', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lat, lon })
+        });
+        const femaData = await femaResponse.json();
+        const rawFemaZone = safeText(femaData.zone, 'Unavailable');
+        const femaZoneDisplay = rawFemaZone.toUpperCase() === 'X' ? 'X (Minimal Risk)' : rawFemaZone;
+        document.getElementById('femaZone').innerText = femaZoneDisplay;
+        document.getElementById('baseFloodElevation').innerText = safeText(femaData.bfe, 'Not applicable');
+
+        const usgsResponse = await fetch('https://mlwjgbyvikhpxrthvdec.supabase.co/functions/v1/usgs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lat, lon })
+        });
+        const usgsData = await usgsResponse.json();
+        console.log('USGS data:', usgsData);
+        document.getElementById('gaugeDistance').innerHTML = `<span style="font-size:12px;color:#9bb4d4">${safeText(usgsData.station, 'Nearest gauge')}</span><br>${safeText(usgsData.gauge, 'Unavailable')}`;
+
+        document.getElementById('tideOverlap').innerText = 'Backend coming soon';
+
+        const result = calculateFloodRisk({
+          rainRisk,
+          rainfallInches,
+          maxHourlyRain,
+          rainfallMessage,
+          alertRisk,
+          alertText: nwsData.alertText,
+          femaZone: rawFemaZone,
+          baseFloodElevation: femaData.bfe,
+          elevationFeet: feet,
+          usgsText: usgsData.gauge,
+          usgsStation: usgsData.station,
+          windowHours: selectedWindowHours,
+          windowText: getWindowText(),
+
+          rainfall: {
+            risk: rainRisk,
+            totalInches: rainfallInches,
+            maxHourlyRain,
+            message: rainfallMessage
+          },
+          alerts: {
+            risk: alertRisk,
+            text: nwsData.alertText
+          },
+          floodplain: {
+            zone: rawFemaZone,
+            bfe: femaData.bfe
+          },
+          river: {
+            gauge: usgsData.gauge,
+            station: usgsData.station
+          },
+          elevation: {
+            feet
+          },
+          drainage: {},
+          tide: {}
+        });
+
+        const surgeScore = Math.max(1, Math.min(100, Math.round(Number(result.totalScore ?? result.score ?? 1))));
+        const readinessScore = Math.max(0, Math.round(Number(result.readinessScore ?? (100 - surgeScore))));
+        const riskLevel = result.level || getRiskLevel(surgeScore);
+        const breakdown = result.breakdown || result.components || [];
+
+        document.getElementById('scoreNumber').innerText = surgeScore;
+        document.getElementById('riskLevel').innerText = riskLevel;
+        document.getElementById('readinessLabel').innerText = readinessScore + ' / 100';
+        document.getElementById('futureTrend').innerText = result.trend || (surgeScore >= 50 ? 'Risk rising' : 'Stable for now');
+        setRiskVisual(surgeScore);
+        renderBreakdown(breakdown, {
+          rainfallMessage,
+          rainfallInches,
+          maxHourlyRain,
+          alertRisk,
+          alertText: nwsData.alertText,
+          femaZone: rawFemaZone,
+          baseFloodElevation: femaData.bfe,
+          elevationFeet: feet,
+          usgsText: usgsData.gauge,
+          usgsStation: usgsData.station
+        });
+        renderWhyThisScore(result.assessment || result);
+
+        document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (error) {
+        document.getElementById('coordsLabel').innerText = 'Location unavailable';
+        document.getElementById('elevationLabel').innerText = 'Unavailable';
+        document.getElementById('femaZone').innerText = 'Unavailable';
+        document.getElementById('baseFloodElevation').innerText = 'Unavailable';
+        document.getElementById('realAlertStatus').innerText = 'Unavailable';
+        document.getElementById('rainfallOutlook').innerText = 'Unavailable';
+        document.getElementById('gaugeDistance').innerText = 'Unavailable';
+        document.getElementById('riskLevel').innerText = 'ERROR';
+        renderWhyThisScore({
+          reasons: [{ type: 'danger', text: 'SurgeWatch could not complete the live analysis for this location.' }],
+          summary: 'Please check the address and try again. If the address is valid, one of the live data services may be temporarily unavailable.'
+        });
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>
